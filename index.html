@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Casino Lobby</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <style>
+    html, body { margin: 0; padding: 0; background: #000; height: 100%; overscroll-behavior: none; touch-action: none; }
+    * { -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; }
+    #game-root { position: fixed; inset: 0; display: grid; place-items: center; background: #000; overflow: hidden; }
+    canvas { image-rendering: pixelated; image-rendering: crisp-edges; width: 100vw; height: 100vh; max-width: 100%; max-height: 100%; display: block; background: #1a0f1a; cursor: pointer; }
+    .hud { position: fixed; left: 8px; top: 8px; color: #ffd56b; font: 12px/1 monospace; background: rgba(0,0,0,0.35); padding: 4px 6px; border-radius: 6px; }
+    .dialog { position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%); background: rgba(16,8,16,0.95); border: 1px solid #caa86a; color: #f1e8d0; padding: 10px 12px; width: min(80vw, 260px); border-radius: 8px; box-shadow: 0 8px 26px rgba(0,0,0,0.5); display: none; z-index: 10; pointer-events: auto; }
+    .dialog h4 { margin: 0 0 6px 0; font: 700 15px/1.25 system-ui, sans-serif; color: #ffd56b; }
+    .dialog p  { margin: 0 0 10px 0; font: 12px/1.35 system-ui, sans-serif; opacity: 0.9; }
+    .dialog .row { display: flex; gap: 6px; justify-content: flex-end; }
+    .dialog button { background: #ffd56b; border: none; color: #3a2b10; padding: 6px 10px; border-radius: 7px; font: 700 12px/1 system-ui, sans-serif; cursor: pointer; }
+    .start-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: grid; place-items: center; z-index: 9; }
+    .start-overlay button { background: #ffd56b; border: none; border-radius: 12px; padding: 12px 18px; color: #3a2b10; font: 800 16px/1 system-ui, sans-serif; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div id="game-root">
+    <canvas id="game"></canvas>
+    <div class="start-overlay" id="startOverlay">
+      <button id="startBtn">Tap to Start</button>
+    </div>
+    <div class="dialog" id="dialog">
+      <h4 id="dlgTitle">Play Game?</h4>
+      <p id="dlgText">Approach a table to play.</p>
+      <div class="row">
+        <button id="dlgPlay">Play</button>
+      </div>
+    </div>
+    <div class="hud" id="hud">init…</div>
+  </div>
+
+  <script>
+  (function(){
+    'use strict';
+    const hud = document.getElementById('hud');
+    const hlog = (msg) => hud && (hud.textContent = msg);
+
+    const ASSETS = {
+      background: 'https://cdn.abacus.ai/images/ba393218-5d4c-4d90-a7e1-64870ec7fbfc.png',
+      characterSprite: 'https://cdn.abacus.ai/images/e65c8a11-57f6-4868-91a9-c725446ffb4e.png',
+      pages: {
+        blackjack: 'blackjack.html',
+        poker: 'poker.html',
+        slots: 'slotmachine.html',
+        solitaire: 'solitaire.html'
+      }
+    };
+
+    ['gesturestart','gesturechange','gestureend','dblclick'].forEach(t => {
+      document.addEventListener(t, e => e.preventDefault(), { passive:false });
+    });
+
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+      const w = Math.floor(window.innerWidth);
+      const h = Math.floor(window.innerHeight);
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      canvas.style.width = w + 'px';
+      canvas.style.height = h + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    const world = { width: 768, height: 1365 };
+
+    const player = {
+      x: world.width/2,
+      y: world.height*0.72,
+      speed: 4.5,
+      dir: 'down',
+      frame: 0,
+      frameTime: 0,
+      frameInterval: 120,
+      w: 256,
+      h: 341,
+      spriteImg: null,
+      spriteCols: 3,
+      spriteRows: 3,
+      targetX: null,
+      targetY: null,
+      moving: false
+    };
+
+    const dirFeetOffset = {
+      down: 0,
+      up: 2,
+      left: 1,
+      right: 1
+    };
+    const feetPad = 2;
+
+    const zones = [
+      { id: 'blackjack', label: 'Blackjack', x: world.width/2 - 190, y: 150,  w: 380, h: 200 },
+      { id: 'poker',     label: 'Poker',     x: 30,                  y: 610, w: 280, h: 190 },
+      { id: 'slots',     label: 'Slots',     x: world.width - 310,   y: 610, w: 280, h: 180 },
+      { id: 'solitaire', label: 'Solitaire', x: world.width/2 - 170, y: world.height - 270, w: 340, h: 170 }
+    ];
+
+    const occlusionEnabled = false;
+
+    const keys = new Set();
+    document.addEventListener('keydown', e => {
+      if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','w','a','s','d','W','A','S','D',' '].includes(e.key)) e.preventDefault();
+      keys.add(e.key);
+    });
+    document.addEventListener('keyup', e => keys.delete(e.key));
+
+    function worldPointFromClient(x, y){
+      const rect = canvas.getBoundingClientRect();
+      const clickX = x - rect.left;
+      const clickY = y - rect.top;
+      const vp = getViewport();
+      const worldX = (clickX - vp.offX) / vp.scale;
+      const worldY = (clickY - vp.offY) / vp.scale;
+      return { worldX, worldY };
+    }
+
+    canvas.addEventListener('click', (e) => {
+      const { worldX, worldY } = worldPointFromClient(e.clientX, e.clientY);
+      player.targetX = worldX; player.targetY = worldY; player.moving = true;
+    });
+
+    canvas.addEventListener('touchstart', (e) => {
+      if (e.target !== canvas) return;
+      e.preventDefault();
+      const t = e.touches[0];
+      const { worldX, worldY } = worldPointFromClient(t.clientX, t.clientY);
+      player.targetX = worldX; player.targetY = worldY; player.moving = true;
+    });
+
+    const dialog = document.getElementById('dialog');
+    const dlgTitle = document.getElementById('dlgTitle');
+    const dlgText = document.getElementById('dlgText');
+    const dlgPlay = document.getElementById('dlgPlay');
+    let pendingZone = null;
+
+    // Open game in new tab
+    dlgPlay.addEventListener('click', () => {
+      if (!pendingZone) return;
+      const url = ASSETS.pages[pendingZone.id];
+      if (url) {
+        window.open(url, '_blank');
+      }
+    });
+
+    function openDialog(zone) { pendingZone = zone; dlgTitle.textContent = `Play ${zone.label}?`; dlgText.textContent = `Press Play to enter ${zone.label}.`; dialog.style.display = 'block'; }
+    function closeDialog() { dialog.style.display = 'none'; pendingZone = null; }
+
+    function isIntersect(a, b) { return !(a.x + a.w < b.x || a.x > b.x + b.w || a.y + a.h < b.y || a.y > b.y + b.h); }
+
+    const startOverlay = document.getElementById('startOverlay');
+    const startBtn = document.getElementById('startBtn');
+    let started = false;
+    startBtn.addEventListener('click', () => { started = true; startOverlay.style.display = 'none'; });
+
+    const defaultSprite = new Image();
+    defaultSprite.crossOrigin = 'anonymous';
+    defaultSprite.onload = () => { player.spriteImg = defaultSprite; };
+    defaultSprite.onerror = () => hlog('sprite load error — placeholder');
+    defaultSprite.src = ASSETS.characterSprite;
+
+    const bgImg = new Image();
+    bgImg.crossOrigin = 'anonymous';
+    bgImg.onerror = () => hlog('bg load error — gradient fallback');
+    bgImg.src = ASSETS.background;
+
+    function getViewport() {
+      const vw = canvas.width / (window.devicePixelRatio || 1);
+      const vh = canvas.height / (window.devicePixelRatio || 1);
+      const scale = Math.min(vw / world.width, vh / world.height);
+      const viewW = world.width * scale;
+      const viewH = world.height * scale;
+      const offX = (vw - viewW) / 2;
+      const offY = (vh - viewH) / 2;
+      return { scale, offX, offY, vw, vh, viewW, viewH };
+    }
+
+    function drawBackground(vp) {
+      if (bgImg.complete && bgImg.naturalWidth > 0) {
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(bgImg, vp.offX, vp.offY, vp.viewW, vp.viewH);
+      } else {
+        const g = ctx.createLinearGradient(0,0,0,canvas.height);
+        g.addColorStop(0, '#2b1730');
+        g.addColorStop(1, '#1a0f1a');
+        ctx.fillStyle = g;
+        ctx.fillRect(0,0,canvas.width, canvas.height);
+      }
+    }
+
+    function getPlayerFeetBox() {
+      const feetW = Math.max(56, player.w * 0.33);
+      const feetH = Math.max(18, player.h * 0.07);
+      return { x: player.x - feetW/2, y: player.y - feetH, w: feetW, h: feetH };
+    }
+
+    function drawPlayer(vp, dt) {
+      if (player.moving) {
+        player.frameTime += dt;
+        if (player.frameTime >= player.frameInterval) { player.frameTime = 0; player.frame = (player.frame + 1) % player.spriteCols; }
+      } else { player.frame = 1; player.frameTime = 0; }
+
+      ctx.save(); ctx.translate(vp.offX, vp.offY); ctx.scale(vp.scale, vp.scale);
+      if (player.spriteImg && player.spriteImg.complete && player.spriteImg.naturalWidth > 0) {
+        let dirIndex = 0; let flipHorizontal = false;
+        if (player.dir === 'down') dirIndex = 0;
+        else if (player.dir === 'up') dirIndex = 2;
+        else if (player.dir === 'left') { dirIndex = 1; flipHorizontal = true; }
+        else if (player.dir === 'right') { dirIndex = 1; }
+        const sw = player.spriteImg.width / player.spriteCols;
+        const sh = player.spriteImg.height / player.spriteRows;
+        const sx = player.frame * sw; const sy = dirIndex * sh;
+        const dx = Math.round(player.x - player.w/2);
+        const dy = Math.round(player.y - player.h + (dirFeetOffset[player.dir] || 0));
+        ctx.imageSmoothingEnabled = false;
+        if (flipHorizontal) { ctx.save(); ctx.translate(Math.round(player.x), dy); ctx.scale(-1, 1); ctx.drawImage(player.spriteImg, sx, sy, sw, sh, -player.w/2, 0, player.w, player.h); ctx.restore(); }
+        else { ctx.drawImage(player.spriteImg, sx, sy, sw, sh, dx, dy, player.w, player.h); }
+      } else {
+        ctx.fillStyle = '#ffd56b';
+        const dx = Math.round(player.x - player.w/2);
+        const dy = Math.round(player.y - player.h + (dirFeetOffset[player.dir] || 0));
+        ctx.fillRect(dx, dy, player.w, player.h);
+      }
+      ctx.restore();
+    }
+
+    function drawZones(vp) {
+      const debugZones = false;
+      if (!debugZones) return;
+      ctx.save(); ctx.translate(vp.offX, vp.offY); ctx.scale(vp.scale, vp.scale);
+      zones.forEach(z => {
+        ctx.strokeStyle = 'rgba(0, 200, 255, 0.9)'; ctx.lineWidth = 2; ctx.strokeRect(z.x, z.y, z.w, z.h);
+        ctx.fillStyle = 'rgba(0, 200, 255, 0.12)'; ctx.fillRect(z.x, z.y, z.w, z.h);
+        ctx.fillStyle = '#00c8ff'; ctx.font = '16px monospace'; ctx.fillText(z.label, z.x + 5, z.y + 20);
+      });
+      const pb = getPlayerFeetBox(); ctx.strokeStyle = 'rgba(0,255,255,0.9)'; ctx.strokeRect(pb.x, pb.y, pb.w, pb.h);
+      ctx.restore();
+    }
+
+    function update(dt) {
+      let vx = 0, vy = 0;
+      if (keys.has('ArrowLeft') || keys.has('a') || keys.has('A')) vx -= 1;
+      if (keys.has('ArrowRight') || keys.has('d') || keys.has('D')) vx += 1;
+      if (keys.has('ArrowUp') || keys.has('w') || keys.has('W')) vy -= 1;
+      if (keys.has('ArrowDown') || keys.has('s') || keys.has('S')) vy += 1;
+
+      if (player.moving && player.targetX !== null && player.targetY !== null) {
+        const dx = player.targetX - player.x; const dy = player.targetY - player.y; const dist = Math.hypot(dx, dy);
+        if (dist < player.speed * (dt/16.67)) { player.x = player.targetX; player.y = player.targetY; player.moving = false; player.targetX = null; player.targetY = null; }
+        else { vx = dx / dist; vy = dy / dist; }
+      }
+
+      if (vx !== 0 || vy !== 0) {
+        const len = Math.hypot(vx, vy); vx /= len; vy /= len; player.x += vx * player.speed * (dt/16.67); player.y += vy * player.speed * (dt/16.67);
+        if (Math.abs(vx) > Math.abs(vy)) player.dir = (vx > 0 ? 'right' : 'left'); else player.dir = (vy > 0 ? 'down' : 'up');
+      }
+
+      const leftFeetMargin = 4;
+      const rightFeetMargin = 4;
+      const topFeetMargin = 8;
+      const bottomFeetMargin = 8 + feetPad;
+      player.x = Math.max(player.w/2 + leftFeetMargin, Math.min(world.width - player.w/2 - rightFeetMargin, player.x));
+      player.y = Math.max(topFeetMargin, Math.min(world.height - bottomFeetMargin, player.y));
+    }
+
+    function render(dt) {
+      const vp = getViewport();
+      ctx.clearRect(0,0,canvas.width, canvas.height);
+      drawBackground(vp);
+      drawZones(vp);
+      drawPlayer(vp, dt);
+    }
+
+    function checkProximity() {
+      const pb = getPlayerFeetBox();
+      const near = zones.find(z => isIntersect(pb, z));
+      if (near && !pendingZone) { openDialog(near); }
+      else if (!near && pendingZone) { closeDialog(); }
+    }
+
+    let last = performance.now();
+    function loop(now) {
+      const dt = Math.min(48, now - last); last = now;
+      if (started) { update(dt); render(dt); checkProximity(); hlog('running'); } else { hlog('tap to start…'); }
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+  })();
+  </script>
+</body>
+</html>
