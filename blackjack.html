@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<title>Blackjack Game 4.0 Custom Background (fixed)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden; position: fixed; font-family: 'Arial', sans-serif;
+    /* Use the uploaded file's public CDN URL so the Playground can load it */
+    background: url('https://cdn.abacus.ai/images/01f70d5c-9af8-49a5-ad9f-268fb6e87fd4.png') center center / cover no-repeat;
+    color: white; touch-action: manipulation; display: flex; justify-content: center; align-items: center;
+  }
+  /* subtle overlay so UI reads better on busy background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    pointer-events: none;
+  }
+  .game-container { background: transparent; border-radius: 15px; padding: 15px; width: 100%; max-width: 600px; height: 100vh; max-height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+  .message { text-align: center; font-size: clamp(0.9em, 3.5vw, 1.2em); color: #ffd700; margin: 60px 0 10px 0; min-height: 30px; font-weight: bold; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); flex-shrink: 0; }
+  .cards-area { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 20px; overflow: hidden; min-height: 0; padding: 10px 0; }
+  .cards-container { display: flex; justify-content: center; gap: 5px; flex-wrap: nowrap; padding: 0 5px; }
+  .card-wrapper { position: relative; flex: 0 0 90px !important; max-width: 90px !important; min-width: 90px !important; }
+  .card, .card-back { width: 90px !important; height: 180px !important; max-height: 180px !important; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); cursor: pointer; transition: transform 0.3s; position: relative; overflow: visible; display:flex; flex-direction:column; justify-content:space-between; padding:10px; color:black; }
+  .card { background: white; }
+  .card.red { color: #dc143c !important; }
+  .card.black { color: #000 !important; }
+  .card-value { font-size: 1.6em; font-weight: bold; line-height: 0.9; }
+  .card-suit { font-size: 2.5em; text-align: center; margin: auto 0; line-height:1; }
+  .card-value-bottom { font-size:1.6em; font-weight:bold; text-align:right; line-height:0.9; transform: rotate(180deg); margin-top:5px; }
+  .card-back { background: linear-gradient(135deg,#004080,#001f3f); color:#0074d9; font-size:2em; font-weight:bold; user-select:none; }
+  .card-back::before { content:''; position:absolute; width:80%; height:80%; background: repeating-linear-gradient(45deg,#0074d9,#0074d9 5px,#004080 5px,#004080 10px); border-radius:6px; opacity:0.6; }
+  .bottom-ui { flex-shrink:0; padding-bottom: env(safe-area-inset-bottom); }
+  .info-panel { display:flex; justify-content:space-around; margin:15px 0 10px 0; font-size:clamp(1em,4vw,1.3em); }
+  .info-item { text-align:center; }
+  .info-label { color:#ffd700; font-size:0.7em; }
+  .info-value { font-weight:bold; font-size:1.2em; }
+  .controls { display:flex; justify-content:center; gap:10px; margin-top:10px; flex-wrap:wrap; }
+  .bet-controls { display:flex; align-items:center; gap:8px; }
+  button { background: linear-gradient(135deg,#ffd700 0%,#ffed4e 100%); border:none; padding:12px 25px; font-size: clamp(0.9em,3.5vw,1.1em); font-weight:bold; border-radius:10px; cursor:pointer; color:#000; box-shadow:0 5px 15px rgba(0,0,0,0.3); transition: all 0.3s; touch-action:manipulation; user-select:none; }
+  button:active{ transform: scale(0.95); }
+  button:disabled{ opacity:0.5; cursor:not-allowed; }
+  @keyframes dealCard { 0% { transform: translateY(-50px) rotateY(180deg); opacity:0; } 100% { transform: translateY(0) rotateY(0); opacity:1; } }
+  .card.dealing { animation: dealCard 0.5s ease-out; }
+  @media (orientation: landscape) and (max-height:600px) { .game-container{ padding:10px; } .info-panel{ margin:10px 0; font-size:1em; } button{ padding:8px 15px; font-size:0.9em; } .card,.card-back{ height:140px !important; max-height:140px !important; } .card-value,.card-value-bottom{ font-size:1.4em; } .card-suit{ font-size:2em; } }
+  @media (max-width:350px) { .game-container{ padding:10px; } .cards-container{ gap:3px; } .card,.card-back{ height:150px !important; max-height:150px !important; } .card-value,.card-value-bottom{ font-size:1.5em; } .card-suit{ font-size:2.2em; } }
+</style>
+</head>
+<body>
+  <div class="game-container">
+    <div class="message" id="message">Place your bet and press DEAL!</div>
+    <div class="cards-area">
+      <div class="cards-container" id="dealerCards"></div>
+      <div class="cards-container" id="playerCards"></div>
+    </div>
+    <div class="bottom-ui">
+      <div class="info-panel">
+        <div class="info-item"><div class="info-label">BALANCE</div><div class="info-value" id="balance">1000</div></div>
+        <div class="info-item"><div class="info-label">BET</div><div class="info-value" id="bet">10</div></div>
+      </div>
+      <div class="controls">
+        <div class="bet-controls"><button id="betMinus">-</button><button id="betPlus">+</button></div>
+        <button id="dealButton">DEAL</button>
+        <button id="hitButton" disabled>HIT</button>
+        <button id="standButton" disabled>STAND</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AudioContext();
+function playCardSound(){ const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.value=400; o.type='sine'; g.gain.setValueAtTime(0.3,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.1); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime+0.1);} 
+function playWinSound(){ const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.type='sine'; o.frequency.setValueAtTime(523,audioCtx.currentTime); o.frequency.setValueAtTime(659,audioCtx.currentTime+0.1); o.frequency.setValueAtTime(784,audioCtx.currentTime+0.2); g.gain.setValueAtTime(0.3,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.4); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime+0.4);} 
+function playLoseSound(){ const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.type='sawtooth'; o.frequency.setValueAtTime(300,audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(100,audioCtx.currentTime+0.3); g.gain.setValueAtTime(0.2,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.3); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime+0.3);} 
+function playButtonSound(){ const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.value=800; o.type='square'; g.gain.setValueAtTime(0.1,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.05); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime+0.05);} 
+function playChipSound(){ const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.value=1000; o.type='sine'; g.gain.setValueAtTime(0.2,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.08); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime+0.08);} 
+
+const suits=['♠','♥','♦','♣']; const values=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+let deck=[], playerHand=[], dealerHand=[], balance=1000, bet=10, gameState='betting';
+const balanceEl=document.getElementById('balance'), betEl=document.getElementById('bet'), messageEl=document.getElementById('message'), dealerCardsEl=document.getElementById('dealerCards'), playerCardsEl=document.getElementById('playerCards'), dealButton=document.getElementById('dealButton'), hitButton=document.getElementById('hitButton'), standButton=document.getElementById('standButton'), betMinus=document.getElementById('betMinus'), betPlus=document.getElementById('betPlus');
+
+function createDeck(){ deck=[]; for(let s of suits){ for(let v of values){ deck.push({suit:s,value:v}); }} shuffleDeck(); }
+function shuffleDeck(){ for(let i=deck.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [deck[i],deck[j]]=[deck[j],deck[i]]; }}
+function getCardValue(card){ if(card.value==='A') return 11; if(['K','Q','J'].includes(card.value)) return 10; return parseInt(card.value); }
+function calculateHandValue(hand){ let value=0, aces=0; for(let c of hand){ value+=getCardValue(c); if(c.value==='A') aces++; } while(value>21 && aces>0){ value-=10; aces--; } return value; }
+function renderCards(container, hand, hideFirst=false){ container.innerHTML=''; hand.forEach((card,idx)=>{ const cardEl=document.createElement('div'); if(hideFirst && idx===0){ cardEl.classList.add('card-back'); cardEl.title='Face Down Card'; } else { cardEl.classList.add('card'); if(card.suit==='♥' || card.suit==='♦'){ cardEl.classList.add('red'); } else { cardEl.classList.add('black'); } cardEl.innerHTML=`<div class="card-value">${card.value}<br>${card.suit}</div><div class="card-suit">${card.suit}</div><div class="card-value-bottom">${card.value}<br>${card.suit}</div>`; } container.appendChild(cardEl); }); }
+function updateUI(){ balanceEl.textContent=balance; betEl.textContent=bet; renderCards(playerCardsEl, playerHand); renderCards(dealerCardsEl, dealerHand, gameState==='playerTurn'); }
+
+function startRound(){ if(bet>balance){ messageEl.textContent='Not enough balance!'; playLoseSound(); return; } playButtonSound(); balance-=bet; playerHand=[]; dealerHand=[]; gameState='playerTurn'; messageEl.textContent='Your turn: HIT or STAND'; createDeck(); setTimeout(()=>{ playerHand.push(deck.pop()); playCardSound(); updateUI(); },100); setTimeout(()=>{ dealerHand.push(deck.pop()); playCardSound(); updateUI(); },300); setTimeout(()=>{ playerHand.push(deck.pop()); playCardSound(); updateUI(); },500); setTimeout(()=>{ dealerHand.push(deck.pop()); playCardSound(); updateUI(); },700); dealButton.disabled=true; hitButton.disabled=false; standButton.disabled=false; betMinus.disabled=true; betPlus.disabled=true; }
+function playerHit(){ if(gameState!=='playerTurn') return; playButtonSound(); playerHand.push(deck.pop()); playCardSound(); updateUI(); const pv=calculateHandValue(playerHand); if(pv>21) endRound('Bust! You lose.'); }
+function playerStand(){ if(gameState!=='playerTurn') return; playButtonSound(); gameState='dealerTurn'; messageEl.textContent='Dealer is playing...'; hitButton.disabled=true; standButton.disabled=true; dealerPlay(); }
+function dealerPlay(){ updateUI(); let cardsToAdd=[]; let dv=calculateHandValue(dealerHand); while(dv<17){ const nc=deck.pop(); cardsToAdd.push(nc); dealerHand.push(nc); dv=calculateHandValue(dealerHand); } for(let i=0;i<cardsToAdd.length;i++){ dealerHand.pop(); } let delay=0; cardsToAdd.forEach((card,index)=>{ setTimeout(()=>{ dealerHand.push(card); playCardSound(); updateUI(); if(index===cardsToAdd.length-1){ setTimeout(()=>{ determineWinner(); },500); } }, delay); delay+=500; }); if(cardsToAdd.length===0){ setTimeout(()=>{ determineWinner(); },500); } }
+function determineWinner(){ const pv=calculateHandValue(playerHand); const dv=calculateHandValue(dealerHand); if(dv>21 || pv>dv){ balance+=bet*2; playWinSound(); endRound('You win!'); } else if(pv===dv){ balance+=bet; playButtonSound(); endRound('Push. It\'s a tie.'); } else { playLoseSound(); endRound('Dealer wins. You lose.'); } }
+function endRound(message){ gameState='betting'; messageEl.textContent=message; dealButton.disabled=false; hitButton.disabled=true; standButton.disabled=true; betMinus.disabled=false; betPlus.disabled=false; updateUI(); }
+betMinus.addEventListener('click',()=>{ if(gameState==='betting' && bet>10){ bet-=10; betEl.textContent=bet; playChipSound(); } });
+betPlus.addEventListener('click',()=>{ if(gameState==='betting' && bet<balance){ bet+=10; betEl.textContent=bet; playChipSound(); } });
+dealButton.addEventListener('click',()=>{ if(gameState==='betting'){ startRound(); } }); hitButton.addEventListener('click',()=>{ playerHit(); }); standButton.addEventListener('click',()=>{ playerStand(); }); updateUI();
+</script>
+</body>
+</html>

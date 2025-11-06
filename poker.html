@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Video Poker</title>
+
+    <link rel="manifest" href="manifest.json" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html, body { width: 100%; height: 100%; overflow: hidden; }
+        body {
+            font-family: 'Arial', sans-serif;
+            /* Use the uploaded image public URL so it loads reliably in the Playground */
+            background: url('https://cdn.abacus.ai/images/05fbd73e-cd87-4fb9-a3b9-e0b9ee362ddc.png') center / cover no-repeat fixed;
+            display: flex; justify-content: center; align-items: center; color: white; touch-action: manipulation;
+        }
+        .game-container {
+            background: transparent; /* allow image to show through fully */
+            border-radius: 15px; padding: 15px; box-shadow: 0 0 50px rgba(0,0,0,0.25);
+            width: 100%; max-width: 600px; height: 100vh; max-height: 100vh; display: flex; flex-direction: column; overflow-y: auto;
+        }
+        .paytable { background: rgba(255, 215, 0, 0.08); border: 2px solid rgba(255,215,0,0.95); border-radius: 8px; padding: 8px; margin-bottom: 10px; font-size: clamp(0.65em, 2.5vw, 0.85em); }
+        .paytable-row { display: flex; justify-content: space-between; padding: 3px 8px; border-bottom: 1px solid rgba(255, 215, 0, 0.2); }
+        .paytable-row:last-child { border-bottom: none; }
+        .paytable-row.highlight { background: rgba(255, 215, 0, 0.35); font-weight: bold; animation: pulse 0.5s ease-in-out; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        .cards-container { display: flex; justify-content: center; gap: 5px; margin: 15px 0; flex-wrap: nowrap; padding: 0 5px; }
+        .card-wrapper { position: relative; flex: 1; max-width: 110px; }
+        .card { width: 100%; aspect-ratio: 5/7; background: rgba(255,255,255,0.95); border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); cursor: pointer; transition: transform 0.08s ease, box-shadow 0.12s ease; position: relative; overflow: visible; display: flex; flex-direction: column; justify-content: space-between; padding: 10px; will-change: transform; }
+        .card:active { transform: translateY(-2px) scale(0.99); }
+        .card.held { transform: translateY(-15px); box-shadow: 0 0 30px rgba(255, 215, 0, 0.8); }
+        .card.red { color: #dc143c !important; } .card.black { color: #000 !important; }
+        .card-value { font-size: 1.8em; font-weight: bold; line-height: 0.9; }
+        .card-suit { font-size: 2.8em; text-align: center; margin: auto 0; line-height: 1; }
+        .card-value-bottom { font-size: 1.8em; font-weight: bold; text-align: right; line-height: 0.9; transform: rotate(180deg); margin-top: 7px; }
+        .hold-label { position: absolute; top: -22px; left: 50%; transform: translateX(-50%); background: #ffd700; color: #000; padding: 3px 10px; border-radius: 5px; font-weight: bold; font-size: clamp(0.7em, 2.5vw, 0.9em); opacity: 0; transition: opacity 0.3s; white-space: nowrap; }
+        .card.held .hold-label { opacity: 1; }
+        .info-panel { display: flex; justify-content: space-around; margin: 15px 0; font-size: clamp(1em, 4vw, 1.3em); }
+        .info-item { text-align: center; }
+        .info-label { color: #ffd700; font-size: 0.7em; }
+        .info-value { font-weight: bold; font-size: 1.2em; text-shadow: 0 0 6px rgba(0,0,0,0.6); }
+        .controls { display: flex; justify-content: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+        .bet-controls { display: flex; align-items: center; gap: 8px; }
+        button { background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); border: none; padding: 12px 25px; font-size: clamp(0.9em, 3.5vw, 1.1em); font-weight: bold; border-radius: 10px; cursor: pointer; color: #000; box-shadow: 0 5px 15px rgba(0,0,0,0.3); transition: transform 80ms ease, box-shadow 120ms ease; touch-action: manipulation; user-select: none; will-change: transform; }
+        button:active { transform: scale(0.97); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .message { text-align: center; font-size: clamp(0.9em, 3.5vw, 1.2em); color: #ffd700; margin: 10px 0; min-height: 30px; font-weight: bold; text-shadow: 0 0 10px rgba(0,0,0,0.8); }
+        .card-back { background: linear-gradient(135deg, #c41e3a 0%, #8b0000 100%); display: flex; align-items: center; justify-content: center; font-size: 2.5em; color: white; padding: 0; overflow: hidden; }
+        @keyframes dealCard { 0% { transform: translateY(-50px) rotateY(180deg); opacity: 0; } 100% { transform: translateY(0) rotateY(0); opacity: 1; } }
+        .card.dealing { animation: dealCard 0.5s ease-out; }
+        @media (orientation: landscape) and (max-height: 600px) { .game-container { padding: 10px; max-height: 100vh; } .paytable { font-size: 0.6em; padding: 5px; } .paytable-row { padding: 2px 5px; } .cards-container { margin: 10px 0; } .info-panel { margin: 10px 0; font-size: 1em; } button { padding: 8px 15px; font-size: 0.9em; } }
+        @media (max-width: 350px) { .game-container { padding: 10px; } .cards-container { gap: 3px; } .hold-label { font-size: 0.65em; padding: 2px 6px; } .card-value, .card-value-bottom { font-size: 1.3em; } .card-suit { font-size: 2em; } }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="paytable" id="paytable">
+            <div class="paytable-row"><span>Royal Flush</span><span>250x</span></div>
+            <div class="paytable-row"><span>Straight Flush</span><span>50x</span></div>
+            <div class="paytable-row"><span>Four of a Kind</span><span>25x</span></div>
+            <div class="paytable-row"><span>Full House</span><span>9x</span></div>
+            <div class="paytable-row"><span>Flush</span><span>6x</span></div>
+            <div class="paytable-row"><span>Straight</span><span>4x</span></div>
+            <div class="paytable-row"><span>Three of a Kind</span><span>3x</span></div>
+            <div class="paytable-row"><span>Two Pair</span><span>2x</span></div>
+            <div class="paytable-row"><span>Jacks or Better</span><span>1x</span></div>
+        </div>
+
+        <div class="message" id="message">Place bet and press DEAL!</div>
+
+        <div class="cards-container" id="cardsContainer">
+            <div class="card-wrapper">
+                <div class="hold-label">HOLD</div>
+                <div class="card card-back" data-index="0">🂠</div>
+            </div>
+            <div class="card-wrapper">
+                <div class="hold-label">HOLD</div>
+                <div class="card card-back" data-index="1">🂠</div>
+            </div>
+            <div class="card-wrapper">
+                <div class="hold-label">HOLD</div>
+                <div class="card card-back" data-index="2">🂠</div>
+            </div>
+            <div class="card-wrapper">
+                <div class="hold-label">HOLD</div>
+                <div class="card card-back" data-index="3">🂠</div>
+            </div>
+            <div class="card-wrapper">
+                <div class="hold-label">HOLD</div>
+                <div class="card card-back" data-index="4">🂠</div>
+            </div>
+        </div>
+
+        <div class="info-panel">
+            <div class="info-item">
+                <div class="info-label">CREDITS</div>
+                <div class="info-value" id="credits">100</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">BET</div>
+                <div class="info-value" id="betDisplay">5</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">WIN</div>
+                <div class="info-value" id="winDisplay">0</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="bet-controls">
+                <button id="betMinus" aria-label="Decrease bet">-</button>
+                <button id="betPlus" aria-label="Increase bet">+</button>
+            </div>
+            <button id="dealButton">DEAL</button>
+        </div>
+    </div>
+
+    <script>
+      // Prevent double-tap zoom hiccups
+      let lastTouchEnd = 0;
+      document.addEventListener('touchend', function (event) {
+        const now = Date.now();
+        if (now - lastTouchEnd <= 300) event.preventDefault();
+        lastTouchEnd = now;
+      }, false);
+
+      // ========== GAME STATE ==========
+      let credits = 100;
+      let bet = 5;
+      let currentHand = [];
+      let heldCards = [false, false, false, false, false];
+      let gameState = 'betting';
+      let deck = [];
+
+      const suits = ['\u2660', '\u2665', '\u2666', '\u2663'];
+      const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+      // ========== AUDIO ==========
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+      function playSound(frequency, duration, type = 'sine') {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        oscillator.connect(gainNode); gainNode.connect(audioContext.destination);
+        oscillator.frequency.value = frequency; oscillator.type = type;
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+        oscillator.start(audioContext.currentTime); oscillator.stop(audioContext.currentTime + duration);
+      }
+      function playDealSound() { playSound(400, 0.1, 'square'); }
+      function playHoldSound() { playSound(600, 0.1, 'sine'); }
+      function playWinSound() {
+        playSound(800, 0.2, 'sine');
+        setTimeout(() => playSound(1000, 0.2, 'sine'), 100);
+        setTimeout(() => playSound(1200, 0.3, 'sine'), 200);
+      }
+      function playLoseSound() { playSound(200, 0.3, 'sawtooth'); }
+
+      // Cached low-latency beep for bet +/- feedback
+      let audioReady = false;
+      let beepBuffer = null;
+      (async function initAudio() {
+        try {
+          const ctx = audioContext;
+          const duration = 0.06;
+          const sampleRate = ctx.sampleRate;
+          const length = Math.floor(duration * sampleRate);
+          beepBuffer = ctx.createBuffer(1, length, sampleRate);
+          const data = beepBuffer.getChannelData(0);
+          const freq = 600;
+          for (let i = 0; i < length; i++) {
+            const t = i / sampleRate;
+            data[i] = Math.sin(2 * Math.PI * freq * t) * Math.exp(-t * 25) * 0.35;
+          }
+          audioReady = true;
+        } catch (e) {}
+      })();
+      function playBeep() {
+        if (!audioReady || !beepBuffer) return;
+        const src = audioContext.createBufferSource();
+        const gain = audioContext.createGain();
+        src.buffer = beepBuffer;
+        src.connect(gain); gain.connect(audioContext.destination);
+        gain.gain.value = 0.9;
+        src.start();
+      }
+
+      // ========== DECK & HAND HELPERS ==========
+      function createDeck() {
+        deck = [];
+        for (let i = 0; i < 52; i++) deck.push(i);
+        shuffleDeck();
+      }
+      function shuffleDeck() {
+        for (let i = deck.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [deck[i], deck[j]] = [deck[j], deck[i]];
+        }
+      }
+      function drawCard() { return deck.pop(); }
+      function getCardValue(cardIndex) { return (cardIndex % 13) + 1; }
+      function getCardSuit(cardIndex) { return Math.floor(cardIndex / 13); }
+      function getCardDisplay(cardIndex) {
+        const value = cardIndex % 13;
+        const suit = Math.floor(cardIndex / 13);
+        const isRed = suit === 1 || suit === 2;
+        return { value: values[value], suit: suits[suit], color: isRed ? 'red' : 'black' };
+      }
+
+      function evaluateHand(hand) {
+        const cardValues = hand.map(c => getCardValue(c)).sort((a, b) => a - b);
+        const cardSuits = hand.map(c => getCardSuit(c));
+        const valueCounts = {};
+        cardValues.forEach(v => valueCounts[v] = (valueCounts[v] || 0) + 1);
+        const counts = Object.values(valueCounts).sort((a, b) => b - a);
+        const isFlush = cardSuits.every(s => s === cardSuits[0]);
+        let isStraight = false;
+        if (cardValues[4] - cardValues[0] === 4 && new Set(cardValues).size === 5) isStraight = true;
+        if (cardValues[0] === 1 && cardValues[1] === 2 && cardValues[2] === 3 && cardValues[3] === 4 && cardValues[4] === 5) isStraight = true;
+        if (cardValues[0] === 1 && cardValues[1] === 10 && cardValues[2] === 11 && cardValues[3] === 12 && cardValues[4] === 13) isStraight = true;
+        const isRoyal = isFlush && isStraight && cardValues[0] === 1 && cardValues[4] === 13;
+        if (isRoyal) return { name: 'Royal Flush', multiplier: 250, index: 0 };
+        if (isFlush && isStraight) return { name: 'Straight Flush', multiplier: 50, index: 1 };
+        if (counts[0] === 4) return { name: 'Four of a Kind', multiplier: 25, index: 2 };
+        if (counts[0] === 3 && counts[1] === 2) return { name: 'Full House', multiplier: 9, index: 3 };
+        if (isFlush) return { name: 'Flush', multiplier: 6, index: 4 };
+        if (isStraight) return { name: 'Straight', multiplier: 4, index: 5 };
+        if (counts[0] === 3) return { name: 'Three of a Kind', multiplier: 3, index: 6 };
+        if (counts[0] === 2 && counts[1] === 2) return { name: 'Two Pair', multiplier: 2, index: 7 };
+        if (counts[0] === 2) {
+          const pairValue = Object.keys(valueCounts).find(k => valueCounts[k] === 2);
+          if (pairValue == 1 || pairValue >= 11) return { name: 'Jacks or Better', multiplier: 1, index: 8 };
+        }
+        return { name: 'No Win', multiplier: 0, index: -1 };
+      }
+
+      function displayCard(index, cardIndex) {
+        const cardElement = document.querySelectorAll('.card')[index];
+        const cardDisplay = getCardDisplay(cardIndex);
+        cardElement.classList.add('dealing');
+        cardElement.classList.remove('card-back', 'red', 'black');
+        cardElement.classList.add(cardDisplay.color);
+        cardElement.innerHTML = `
+          <div class="card-value">${cardDisplay.value}<br>${cardDisplay.suit}</div>
+          <div class="card-suit">${cardDisplay.suit}</div>
+          <div class="card-value-bottom">${cardDisplay.value}<br>${cardDisplay.suit}</div>
+        `;
+        setTimeout(() => cardElement.classList.remove('dealing'), 500);
+      }
+
+      function dealInitialHand() {
+        createDeck();
+        currentHand = [];
+        heldCards = [false, false, false, false, false];
+        document.querySelectorAll('.card').forEach(card => {
+          card.classList.remove('red', 'black', 'held');
+          card.classList.add('card-back');
+          card.innerHTML = '🂠';
+        });
+        for (let i = 0; i < 5; i++) {
+          setTimeout(() => {
+            playDealSound();
+            const card = drawCard();
+            currentHand.push(card);
+            displayCard(i, card);
+            if (i === 4) {
+              gameState = 'holding';
+              document.getElementById('message').textContent = 'Select cards to hold and press DRAW!';
+              document.getElementById('dealButton').textContent = 'DRAW';
+              enableCardSelection();
+            }
+          }, i * 150);
+        }
+      }
+
+      function enableCardSelection() {
+        const cards = document.querySelectorAll('.card');
+        cards.forEach((card, index) => {
+          card.style.cursor = 'pointer';
+          card.onclick = () => toggleHold(index);
+        });
+      }
+      function disableCardSelection() {
+        const cards = document.querySelectorAll('.card');
+        cards.forEach(card => { card.style.cursor = 'default'; card.onclick = null; });
+      }
+      function toggleHold(index) {
+        if (gameState !== 'holding') return;
+        playHoldSound();
+        heldCards[index] = !heldCards[index];
+        const card = document.querySelectorAll('.card')[index];
+        if (heldCards[index]) card.classList.add('held'); else card.classList.remove('held');
+      }
+
+      function drawNewCards() {
+        disableCardSelection();
+        let drawCount = 0;
+        for (let i = 0; i < 5; i++) {
+          if (!heldCards[i]) {
+            setTimeout(() => {
+              playDealSound();
+              const card = drawCard();
+              currentHand[i] = card;
+              displayCard(i, card);
+              drawCount++;
+              if (drawCount === heldCards.filter(h => !h).length) setTimeout(() => evaluateAndPayout(), 500);
+            }, i * 150);
+          }
+        }
+        if (heldCards.every(h => h)) setTimeout(() => evaluateAndPayout(), 500);
+      }
+
+      function evaluateAndPayout() {
+        const result = evaluateHand(currentHand);
+        const winAmount = bet * result.multiplier;
+        const paytableRows = document.querySelectorAll('.paytable-row');
+        paytableRows.forEach(row => row.classList.remove('highlight'));
+        if (result.index >= 0) paytableRows[result.index].classList.add('highlight');
+        if (winAmount > 0) {
+          playWinSound();
+          credits += winAmount;
+          document.getElementById('message').textContent = `${result.name}! WIN ${winAmount}!`;
+        } else {
+          playLoseSound();
+          document.getElementById('message').textContent = 'No win. Try again!';
+        }
+        document.getElementById('winDisplay').textContent = winAmount;
+        document.getElementById('credits').textContent = credits;
+        gameState = 'betting';
+        document.getElementById('dealButton').textContent = 'DEAL';
+        document.querySelectorAll('.card').forEach(card => card.classList.remove('held'));
+      }
+
+      // ========== BET CONTROLS: single-tap only ==========
+      const betMinusEl = document.getElementById('betMinus');
+      const betPlusEl  = document.getElementById('betPlus');
+      const betDisplayEl = document.getElementById('betDisplay');
+      function updateBetDisplay() { betDisplayEl.textContent = bet; }
+
+      // Remove any legacy handlers to avoid double triggers
+      betMinusEl.onclick = null;
+      betPlusEl.onclick = null;
+
+      function setupBetButtonSingle(el, stepFn, canRun) {
+        el.addEventListener('click', (e) => {
+          if (!canRun()) return;
+          stepFn();
+          requestAnimationFrame(playBeep);
+        }, { passive: true });
+      }
+
+      setupBetButtonSingle(
+        betMinusEl,
+        () => { if (gameState === 'betting' && bet > 1) { bet--; updateBetDisplay(); } },
+        () => gameState === 'betting' && bet > 1
+      );
+
+      setupBetButtonSingle(
+        betPlusEl,
+        () => { if (gameState === 'betting' && bet < Math.min(credits, 10)) { bet++; updateBetDisplay(); } },
+        () => gameState === 'betting' && bet < Math.min(credits, 10)
+      );
+
+      // ========== DEAL/DRAW ==========
+      const dealButton = document.getElementById('dealButton');
+      dealButton.addEventListener('click', () => {
+        if (gameState === 'betting') {
+          if (credits < bet) { document.getElementById('message').textContent = 'Not enough credits!'; playLoseSound(); return; }
+          credits -= bet;
+          document.getElementById('credits').textContent = credits;
+          document.getElementById('winDisplay').textContent = 0;
+          document.getElementById('message').textContent = '';
+          document.querySelectorAll('.paytable-row').forEach(row => row.classList.remove('highlight'));
+          gameState = 'firstDeal';
+          dealInitialHand();
+        } else if (gameState === 'holding') {
+          gameState = 'secondDeal';
+          drawNewCards();
+        }
+      });
+
+      // Initial deck
+      createDeck();
+    </script>
+</body>
+</html>
