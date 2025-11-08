@@ -19,10 +19,10 @@
       position: fixed;
       -webkit-text-size-adjust: 100%;
       overscroll-behavior: none;
-      background: url('https://cdn.abacus.ai/images/61532888-b4fb-486e-a6e6-6048b597d710.png') center center / cover no-repeat fixed;
-      /* Moved background here for better mobile visibility */
+      background: url('https://cdn.abacus.ai/images/61532888-b4fb-486e-a6e6-6048b597d710.png') center center / contain no-repeat fixed;
+      /* Changed from cover to contain for better mobile visibility */
       background-attachment: fixed;
-      background-size: cover;
+      background-size: contain;
       background-position: center center;
     }
 
@@ -42,7 +42,7 @@
       display: flex;
       flex-direction: column;
       padding: 8px;
-      padding-top: 68px; /* moved up 60px from 128px */
+      padding-top: 53px; /* moved up 15px from 68px */
       overflow: hidden;
       height: 100dvh;
       height: calc(var(--vh, 1vh) * 100);
