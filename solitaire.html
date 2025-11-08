@@ -19,13 +19,13 @@
       position: fixed;
       -webkit-text-size-adjust: 100%;
       overscroll-behavior: none;
-      touch-action: manipulation; /* ✅ Prevent double-tap zoom */
+      touch-action: manipulation;
       -ms-touch-action: manipulation;
     }
 
     html {
-      background: url('https://cdn.abacus.ai/images/241795d0-f9f9-4887-bc8f-c5cae98d0d14.png') center center no-repeat;
-      background-size: cover;
+      background: #2c1810 url('https://cdn.abacus.ai/images/241795d0-f9f9-4887-bc8f-c5cae98d0d14.png') center center no-repeat;
+      background-size: contain; /* ✅ Shows full image without cropping */
       background-attachment: scroll;
     }
 
@@ -50,8 +50,8 @@
       height: 100dvh;
       height: calc(var(--vh, 1vh) * 100);
       touch-action: none;
-      background: rgba(0, 0, 0, 0.4);
-      backdrop-filter: blur(2px);
+      background: rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(1px);
     }
 
     #controls {
@@ -268,7 +268,6 @@
       if (e.ctrlKey) e.preventDefault();
     }, { passive: false });
 
-    // ✅ Prevent double-tap zoom and gesture zoom
     document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
     ['gesturestart','gesturechange','gestureend'].forEach(type => {
       document.addEventListener(type, e => e.preventDefault(), { passive: false });
