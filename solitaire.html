@@ -21,10 +21,12 @@
       overscroll-behavior: none;
       touch-action: manipulation; /* ✅ Prevent double-tap zoom */
       -ms-touch-action: manipulation;
-      background: url('https://cdn.abacus.ai/images/61532888-b4fb-486e-a6e6-6048b597d710.png') center center / cover no-repeat fixed;
-      background-attachment: fixed;
+    }
+
+    html {
+      background: url('https://cdn.abacus.ai/images/61532888-b4fb-486e-a6e6-6048b597d710.png') center center no-repeat;
       background-size: cover;
-      background-position: center center;
+      background-attachment: scroll; /* ✅ Changed from fixed for better mobile support */
     }
 
     body {
@@ -35,7 +37,7 @@
       user-select: none;
       -webkit-user-select: none;
       padding-bottom: env(safe-area-inset-bottom, 0);
-      background: transparent; /* transparent to show html background */
+      background: transparent;
     }
 
     #game-container {
@@ -43,7 +45,7 @@
       display: flex;
       flex-direction: column;
       padding: 8px;
-      padding-top: 68px; /* moved up 60px from 128px */
+      padding-top: 68px;
       overflow: hidden;
       height: 100dvh;
       height: calc(var(--vh, 1vh) * 100);
