@@ -20,10 +20,8 @@
       position: fixed;
       -webkit-text-size-adjust: 100%;
       overscroll-behavior: none;
-      touch-action: manipulation; /* ✅ Prevent double-tap zoom */
-      -ms-touch-action: manipulation;
-      background: url('https://cdn.abacus.ai/images/61532888-b4fb-486e-a6e6-6048b597d710.png')
-        center center / cover no-repeat fixed;
+      touch-action: manipulation; /* ✅ prevents double-tap zoom */
+      background: url('https://cdn.abacus.ai/images/61532888-b4fb-486e-a6e6-6048b597d710.png') center center / cover no-repeat fixed;
       background-attachment: fixed;
       background-size: cover;
       background-position: center center;
@@ -40,7 +38,7 @@
       background: transparent;
     }
 
-    /* ... (rest of your CSS stays the same) ... */
+    /* keep all your CSS unchanged below this line */
   </style>
 </head>
 <body>
@@ -49,8 +47,27 @@
       <div id="score-display">Score: 0 | Moves: 0</div>
       <button id="new-game-btn">New Game</button>
     </div>
+
     <div id="board">
-      <!-- board layout unchanged -->
+      <div id="top-row">
+        <div id="stock-slot" class="slot"></div>
+        <div id="waste-slot" class="slot"></div>
+        <div class="empty-space"></div>
+        <div id="foundation-0" class="slot foundation"></div>
+        <div id="foundation-1" class="slot foundation"></div>
+        <div id="foundation-2" class="slot foundation"></div>
+        <div id="foundation-3" class="slot foundation"></div>
+      </div>
+
+      <div id="tableau">
+        <div id="tableau-0" class="tableau-pile"></div>
+        <div id="tableau-1" class="tableau-pile"></div>
+        <div id="tableau-2" class="tableau-pile"></div>
+        <div id="tableau-3" class="tableau-pile"></div>
+        <div id="tableau-4" class="tableau-pile"></div>
+        <div id="tableau-5" class="tableau-pile"></div>
+        <div id="tableau-6" class="tableau-pile"></div>
+      </div>
     </div>
   </div>
 
@@ -75,18 +92,20 @@
       if (req) req.call(el).catch(()=>{});
     }
 
-    // ✅ Trigger fullscreen only on "New Game", not on board tap
+    // ✅ Allow fullscreen on first board interaction or new game click
     document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('new-game-btn').addEventListener('click', requestFs, { once: true });
+      document.getElementById('board').addEventListener('pointerdown', requestFs, { once: true });
     });
 
-    // ✅ Prevent double tap zoom & accidental fullscreen on mobile
+    // ✅ Fix unwanted zoom on double tap
     document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
-    ['gesturestart','gesturechange','gestureend'].forEach(type => {
-      document.addEventListener(type, e => e.preventDefault(), { passive: false });
-    });
+    document.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
+    document.addEventListener('gesturechange', e => e.preventDefault(), { passive: false });
+    document.addEventListener('gestureend', e => e.preventDefault(), { passive: false });
 
-    /* ... rest of your existing JavaScript remains unchanged ... */
+    /* 🔽 from here, keep your full existing JS logic for game engine */
+    // (the rest of your <script> from createDeck() ... to newGame(); stays identical)
   </script>
 </body>
 </html>
