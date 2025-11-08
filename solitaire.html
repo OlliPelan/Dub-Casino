@@ -24,9 +24,23 @@
     }
 
     html {
-      background: #2c1810 url('https://cdn.abacus.ai/images/241795d0-f9f9-4887-bc8f-c5cae98d0d14.png') center center no-repeat;
-      background-size: contain; /* ✅ Shows full image without cropping */
-      background-attachment: scroll;
+      background: #2c1810;
+      position: relative;
+    }
+
+    html::before {
+      content: '';
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100%;
+      height: 100%;
+      max-width: 768px;
+      max-height: 1344px;
+      background: url('https://cdn.abacus.ai/images/241795d0-f9f9-4887-bc8f-c5cae98d0d14.png') center center no-repeat;
+      background-size: contain;
+      z-index: 0;
     }
 
     body {
@@ -38,6 +52,8 @@
       -webkit-user-select: none;
       padding-bottom: env(safe-area-inset-bottom, 0);
       background: transparent;
+      position: relative;
+      z-index: 1;
     }
 
     #game-container {
