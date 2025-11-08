@@ -25,7 +25,6 @@
 
     html {
       background: #2c1810;
-      position: relative;
     }
 
     html::before {
@@ -40,7 +39,8 @@
       max-height: 1344px;
       background: url('https://cdn.abacus.ai/images/241795d0-f9f9-4887-bc8f-c5cae98d0d14.png') center center no-repeat;
       background-size: contain;
-      z-index: 0;
+      z-index: -1;
+      pointer-events: none;
     }
 
     body {
@@ -52,8 +52,6 @@
       -webkit-user-select: none;
       padding-bottom: env(safe-area-inset-bottom, 0);
       background: transparent;
-      position: relative;
-      z-index: 1;
     }
 
     #game-container {
