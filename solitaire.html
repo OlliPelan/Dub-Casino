@@ -19,9 +19,11 @@
       position: fixed;
       -webkit-text-size-adjust: 100%;
       overscroll-behavior: none;
-      background: url('https://cdn.abacus.ai/images/2fa205f7-c320-4890-80bf-3fcbaecfb531.png') center center no-repeat;
-      background-size: 100% 100%;
+      background: url('https://cdn.abacus.ai/images/61532888-b4fb-486e-a6e6-6048b597d710.png') center center / cover no-repeat fixed;
+      /* Moved background here for better mobile visibility */
       background-attachment: fixed;
+      background-size: cover;
+      background-position: center center;
     }
 
     body {
@@ -32,7 +34,7 @@
       user-select: none;
       -webkit-user-select: none;
       padding-bottom: env(safe-area-inset-bottom, 0);
-      background: transparent;
+      background: transparent; /* transparent to show html background */
     }
 
     #game-container {
@@ -40,7 +42,7 @@
       display: flex;
       flex-direction: column;
       padding: 8px;
-      padding-top: 53px;
+      padding-top: 68px; /* moved up 60px from 128px */
       overflow: hidden;
       height: 100dvh;
       height: calc(var(--vh, 1vh) * 100);
