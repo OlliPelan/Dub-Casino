@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <title>Blackjack Game 4.0 Custom Background (fixed)</title>
 <style>
@@ -11,7 +11,7 @@
     width: 100%; height: 100%; overflow: hidden; position: fixed; font-family: 'Arial', sans-serif;
     /* Use the uploaded file's public CDN URL so the Playground can load it */
     background: url('https://cdn.abacus.ai/images/01f70d5c-9af8-49a5-ad9f-268fb6e87fd4.png') center center / cover no-repeat;
-    color: white; touch-action: manipulation; display: flex; justify-content: center; align-items: center;
+    color: white; touch-action: none; display: flex; justify-content: center; align-items: center;
   }
   @media (min-width: 769px) and (min-height: 1345px) {
     html, body {
@@ -51,7 +51,7 @@
   .bet-controls { display:flex; align-items:center; gap:8px; }
   button { background: linear-gradient(135deg,#ffd700 0%,#ffed4e 100%); border:none; padding:12px 25px; font-size: clamp(0.9em,3.5vw,1.1em); font-weight:bold; border-radius:10px; cursor:pointer; color:#000; box-shadow:0 5px 15px rgba(0,0,0,0.3); transition: all 0.3s; touch-action:manipulation; user-select:none; -webkit-user-select: none; }
   button:active{ transform: scale(0.95); }
-  button:disabled{ opacity:0.5; cursor:not-allowed; pointer-events: none; }
+  button:disabled{ opacity:0.5 !important; cursor:not-allowed !important; pointer-events: none !important; background: linear-gradient(135deg,#999 0%,#bbb 100%) !important; }
   @keyframes dealCard { 0% { transform: translateY(-50px) rotateY(180deg); opacity:0; } 100% { transform: translateY(0) rotateY(0); opacity:1; } }
   .card.dealing { animation: dealCard 0.5s ease-out; }
   @media (max-width: 768px), (max-height: 1344px) { 

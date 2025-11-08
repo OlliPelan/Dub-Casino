@@ -10,7 +10,7 @@
   <style>
     * {
       margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent;
-      touch-action: pan-x pan-y;
+      touch-action: manipulation;
     }
 
     html, body {
@@ -259,11 +259,17 @@
     document.addEventListener('touchmove', blockIfMultiTouch, { passive: false });
 
     let lastTouchEnd = 0;
+    let lastTouchTarget = null;
+    document.addEventListener('touchstart', function(e) {
+      lastTouchTarget = e.target;
+    }, { passive: false });
+    
     document.addEventListener('touchend', function(e) {
       const now = Date.now();
-      if (now - lastTouchEnd <= 300) {
+      if (now - lastTouchEnd <= 300 && lastTouchTarget === e.target) {
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
       }
       lastTouchEnd = now;
     }, { passive: false });
