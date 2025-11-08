@@ -2,36 +2,28 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1e3c72">
   <title>Solitaire</title>
   <style>
-    html { -webkit-text-size-adjust: none; }
-  </style>
-  <style>
     * {
       margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent;
-      touch-action: pan-x pan-y;
-      -ms-touch-action: pan-x pan-y;
     }
 
     html, body {
       width: 100%;
       height: 100%;
-      min-height: 100vh;
-      min-height: -webkit-fill-available;
       overflow: hidden;
       position: fixed;
       -webkit-text-size-adjust: 100%;
       overscroll-behavior: none;
-      touch-action: none;
-    }
-
-    html {
-      background: url('https://cdn.abacus.ai/images/61532888-b4fb-486e-a6e6-6048b597d710.png') no-repeat center center;
+      background: url('https://cdn.abacus.ai/images/61532888-b4fb-486e-a6e6-6048b597d710.png') center center / cover no-repeat fixed;
+      /* Moved background here for better mobile visibility */
+      background-attachment: fixed;
       background-size: cover;
+      background-position: center center;
     }
 
     body {
@@ -141,12 +133,6 @@
       border: 2px solid rgba(0, 0, 0, 0.1);
       top: 0; left: 0;
       touch-action: none;
-      -ms-touch-action: none;
-    }
-
-    .card * {
-      pointer-events: none;
-      touch-action: none;
     }
 
     .tableau-pile .card { width: 100%; height: auto; aspect-ratio: 2.5/3.5; position: absolute; }
@@ -248,16 +234,13 @@
       if (req) req.call(el).catch(()=>{});
     }
     document.addEventListener('DOMContentLoaded', () => {
-      const newBtn = document.getElementById('new-game-btn');
-      const newBtnWin = document.getElementById('new-game-btn-win');
-      if (newBtn) newBtn.addEventListener('click', requestFs, { once: true });
-      if (newBtnWin) newBtnWin.addEventListener('click', requestFs, { once: true });
+      document.getElementById('new-game-btn').addEventListener('click', requestFs, { once: true });
+      document.getElementById('board').addEventListener('pointerdown', requestFs, { once: true });
     });
 
     function setVh() {
       const vh = window.innerHeight * 0.01;
       document.documentElement.style.setProperty('--vh', `${vh}px`);
-      document.documentElement.style.height = window.innerHeight + 'px';
     }
     setVh();
     window.addEventListener('resize', setVh);
@@ -271,30 +254,12 @@
     document.addEventListener('touchstart', blockIfMultiTouch, { passive: false });
     document.addEventListener('touchmove', blockIfMultiTouch, { passive: false });
 
-    let lastTap = 0;
-    let lastTapTarget = null;
-
-    document.addEventListener('touchstart', function(e) {
-      const now = Date.now();
-      const timeSince = now - lastTap;
-      if (timeSince < 400 && timeSince > 0 && e.target === lastTapTarget) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        return false;
-      }
-      lastTapTarget = e.target;
-      lastTap = now;
-    }, { passive: false, capture: true });
-
-    // --- PATCHED: only prevent default for touchend when interacting with game board/cards ---
+    let lastTouchEnd = 0;
     document.addEventListener('touchend', function(e) {
-      // Allow normal clicks on controls (buttons, inputs, etc.) so buttons work on touch devices.
-      // Only prevent the synthetic click for in-board/game interactions that are handled via pointer events.
-      if (e.target.closest('.card') || e.target.closest('#board') || e.target.closest('#drag-clone')) {
-        e.preventDefault();
-      }
-    }, { passive: false, capture: true });
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) e.preventDefault();
+      lastTouchEnd = now;
+    }, { passive: false });
 
     document.addEventListener('wheel', function(e) {
       if (e.ctrlKey) e.preventDefault();
@@ -419,8 +384,7 @@
       }
     }
 
-    // --- Refactored stock action so it can be wired to both click and pointerup ---
-    function handleStockAction() {
+    document.getElementById('stock-slot').addEventListener('click', () => {
       if (stock.length > 0) {
         const card = stock.pop(); card.faceUp = true; waste.push(card); moves++; playSound(300, 0.05); haptic('light');
       } else if (waste.length > 0) {
@@ -429,39 +393,13 @@
         playSound(350, 0.1); haptic('medium');
       }
       updateDisplay();
-    }
-
-    // Wire up stock-slot with both click and pointerup to ensure it works when touchend.preventDefault is present.
-    const attachStockHandlers = () => {
-      const stockSlot = document.getElementById('stock-slot');
-      if (!stockSlot) return;
-      stockSlot.addEventListener('click', handleStockAction);
-      stockSlot.addEventListener('pointerup', (ev) => { ev.preventDefault(); handleStockAction(); }, { passive: false });
-    };
-
-    // Wire new-game buttons to both click and pointerup as a robust fallback
-    const attachNewGameHandlers = () => {
-      const newBtn = document.getElementById('new-game-btn');
-      const newBtnWin = document.getElementById('new-game-btn-win');
-      if (newBtn) {
-        newBtn.addEventListener('click', newGame);
-        newBtn.addEventListener('pointerup', (ev) => { ev.preventDefault(); newGame(); }, { passive: false });
-      }
-      if (newBtnWin) {
-        newBtnWin.addEventListener('click', newGame);
-        newBtnWin.addEventListener('pointerup', (ev) => { ev.preventDefault(); newGame(); }, { passive: false });
-      }
-    };
-
-    // Attach after DOM is ready
-    document.addEventListener('DOMContentLoaded', () => {
-      attachStockHandlers();
-      attachNewGameHandlers();
     });
+
+    document.getElementById('new-game-btn').addEventListener('click', newGame);
+    document.getElementById('new-game-btn-win').addEventListener('click', newGame);
 
     let clickTimeout = null, clickCount = 0, lastClickTarget = null;
     document.getElementById('board').addEventListener('pointerdown', (e) => {
-      e.preventDefault();
       const card = e.target.closest('.card'); if (!card || card.classList.contains('face-down')) return;
       startX = e.clientX; startY = e.clientY; isDragging = false;
       const location = card.dataset.location;
@@ -484,8 +422,6 @@
         haptic('light');
         if (lastClickTarget === card) { clickCount++; } else { clickCount = 1; lastClickTarget = card; }
         if (clickCount === 2) {
-          e.stopPropagation();
-          e.stopImmediatePropagation();
           clearTimeout(clickTimeout); clickCount = 0; lastClickTarget = null; draggedCards = []; draggedFrom = null;
           if (location === 'waste') { autoMoveToFoundationFromWaste(); }
           else if (!isNaN(card.dataset.pileIndex) && !isNaN(card.dataset.cardIndex)) {
