@@ -28,7 +28,7 @@
       overscroll-behavior: none;
       touch-action: none;
     }
-    
+
     html {
       background: url('https://cdn.abacus.ai/images/61532888-b4fb-486e-a6e6-6048b597d710.png') no-repeat center center;
       background-size: cover;
@@ -143,7 +143,7 @@
       touch-action: none;
       -ms-touch-action: none;
     }
-    
+
     .card * {
       pointer-events: none;
       touch-action: none;
@@ -273,7 +273,7 @@
 
     let lastTap = 0;
     let lastTapTarget = null;
-    
+
     document.addEventListener('touchstart', function(e) {
       const now = Date.now();
       const timeSince = now - lastTap;
@@ -286,9 +286,14 @@
       lastTapTarget = e.target;
       lastTap = now;
     }, { passive: false, capture: true });
-    
+
+    // --- PATCHED: only prevent default for touchend when interacting with game board/cards ---
     document.addEventListener('touchend', function(e) {
-      e.preventDefault();
+      // Allow normal clicks on controls (buttons, inputs, etc.) so buttons work on touch devices.
+      // Only prevent the synthetic click for in-board/game interactions that are handled via pointer events.
+      if (e.target.closest('.card') || e.target.closest('#board') || e.target.closest('#drag-clone')) {
+        e.preventDefault();
+      }
     }, { passive: false, capture: true });
 
     document.addEventListener('wheel', function(e) {
@@ -414,7 +419,8 @@
       }
     }
 
-    document.getElementById('stock-slot').addEventListener('click', () => {
+    // --- Refactored stock action so it can be wired to both click and pointerup ---
+    function handleStockAction() {
       if (stock.length > 0) {
         const card = stock.pop(); card.faceUp = true; waste.push(card); moves++; playSound(300, 0.05); haptic('light');
       } else if (waste.length > 0) {
@@ -423,10 +429,35 @@
         playSound(350, 0.1); haptic('medium');
       }
       updateDisplay();
-    });
+    }
 
-    document.getElementById('new-game-btn').addEventListener('click', newGame);
-    document.getElementById('new-game-btn-win').addEventListener('click', newGame);
+    // Wire up stock-slot with both click and pointerup to ensure it works when touchend.preventDefault is present.
+    const attachStockHandlers = () => {
+      const stockSlot = document.getElementById('stock-slot');
+      if (!stockSlot) return;
+      stockSlot.addEventListener('click', handleStockAction);
+      stockSlot.addEventListener('pointerup', (ev) => { ev.preventDefault(); handleStockAction(); }, { passive: false });
+    };
+
+    // Wire new-game buttons to both click and pointerup as a robust fallback
+    const attachNewGameHandlers = () => {
+      const newBtn = document.getElementById('new-game-btn');
+      const newBtnWin = document.getElementById('new-game-btn-win');
+      if (newBtn) {
+        newBtn.addEventListener('click', newGame);
+        newBtn.addEventListener('pointerup', (ev) => { ev.preventDefault(); newGame(); }, { passive: false });
+      }
+      if (newBtnWin) {
+        newBtnWin.addEventListener('click', newGame);
+        newBtnWin.addEventListener('pointerup', (ev) => { ev.preventDefault(); newGame(); }, { passive: false });
+      }
+    };
+
+    // Attach after DOM is ready
+    document.addEventListener('DOMContentLoaded', () => {
+      attachStockHandlers();
+      attachNewGameHandlers();
+    });
 
     let clickTimeout = null, clickCount = 0, lastClickTarget = null;
     document.getElementById('board').addEventListener('pointerdown', (e) => {
