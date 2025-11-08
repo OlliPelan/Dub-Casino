@@ -20,9 +20,7 @@
       position: fixed;
       -webkit-text-size-adjust: 100%;
       overscroll-behavior: none;
-      background: url('https://cdn.abacus.ai/images/61532888-b4fb-486e-a6e6-6048b597d710.png') center center / cover no-repeat fixed;
-      /* Moved background here for better mobile visibility */
-      background-attachment: fixed;
+      background: url('https://cdn.abacus.ai/images/61532888-b4fb-486e-a6e6-6048b597d710.png') center center / cover no-repeat;
       background-size: cover;
       background-position: center center;
       touch-action: none;
@@ -261,17 +259,18 @@
     let lastTouchEnd = 0;
     let lastTouchTarget = null;
     document.addEventListener('touchstart', function(e) {
-      lastTouchTarget = e.target;
-    }, { passive: false });
-    
-    document.addEventListener('touchend', function(e) {
       const now = Date.now();
       if (now - lastTouchEnd <= 300 && lastTouchTarget === e.target) {
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation();
       }
+      lastTouchTarget = e.target;
       lastTouchEnd = now;
+    }, { passive: false });
+    
+    document.addEventListener('touchend', function(e) {
+      e.preventDefault();
     }, { passive: false });
 
     document.addEventListener('wheel', function(e) {
@@ -413,6 +412,7 @@
 
     let clickTimeout = null, clickCount = 0, lastClickTarget = null;
     document.getElementById('board').addEventListener('pointerdown', (e) => {
+      e.preventDefault();
       const card = e.target.closest('.card'); if (!card || card.classList.contains('face-down')) return;
       startX = e.clientX; startY = e.clientY; isDragging = false;
       const location = card.dataset.location;
@@ -435,6 +435,8 @@
         haptic('light');
         if (lastClickTarget === card) { clickCount++; } else { clickCount = 1; lastClickTarget = card; }
         if (clickCount === 2) {
+          e.stopPropagation();
+          e.stopImmediatePropagation();
           clearTimeout(clickTimeout); clickCount = 0; lastClickTarget = null; draggedCards = []; draggedFrom = null;
           if (location === 'waste') { autoMoveToFoundationFromWaste(); }
           else if (!isNaN(card.dataset.pileIndex) && !isNaN(card.dataset.cardIndex)) {
