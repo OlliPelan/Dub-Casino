@@ -10,8 +10,13 @@
   html, body {
     width: 100%; height: 100%; overflow: hidden; position: fixed; font-family: 'Arial', sans-serif;
     /* Use the uploaded file's public CDN URL so the Playground can load it */
-    background: url('https://cdn.abacus.ai/images/01f70d5c-9af8-49a5-ad9f-268fb6e87fd4.png') center center / 768px 1344px no-repeat;
+    background: url('https://cdn.abacus.ai/images/01f70d5c-9af8-49a5-ad9f-268fb6e87fd4.png') center center / cover no-repeat;
     color: white; touch-action: manipulation; display: flex; justify-content: center; align-items: center;
+  }
+  @media (min-width: 769px) and (min-height: 1345px) {
+    html, body {
+      background-size: 768px 1344px;
+    }
   }
   /* subtle overlay so UI reads better on busy background */
   body::before {
