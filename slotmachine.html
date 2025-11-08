@@ -18,7 +18,21 @@
             -webkit-user-select: none;
             user-select: none;
         }
+   .box {
+      width: 100%;            /* Skaalautuu näytön koon mukaan */
+      height: 90vh;          /* Vie suurimman osan pystysuunnasta */
+      max-width: 768px;      /* Enintään 500px leveä */
+      max-height: 1344px;     /* Enintään 400px korkea */
 
+      border-radius: 20px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-size: 1.4rem;
+      text-align: center;
+    }
         html, body {
             width: 100%;
             height: 100%;
@@ -76,7 +90,7 @@
             color: white;
             padding: 10px;
             border-radius: 15px;
-            font-size: 6vw;
+            font-size: 5vw;
             font-weight: 900;
             box-shadow: 0 8px 20px rgba(0,0,0,0.3);
             border: 3px solid rgba(255,255,255,0.2);
@@ -99,7 +113,7 @@
         }
 
         .stat-value {
-            font-size: 7vw;
+            font-size: 9vw;
             display: block;
         }
 
@@ -161,16 +175,16 @@
             background: linear-gradient(135deg, #722f37 0%, #4b1f24 100%); /* wine red gradient */
             color: white;
             border: none;
-            padding: 18px 24px;
-            border-radius: 15px;
-            font-size: 7vw;
+            padding: 12px 18px;
+            border-radius: 12px;
+            font-size: 5.5vw;
             font-weight: 900;
             cursor: pointer;
             touch-action: manipulation;
             box-shadow: 0 6px 20px rgba(114, 47, 55, 0.6);
             border: 3px solid rgba(255,255,255,0.3);
             transition: transform 0.1s, background 0.3s, opacity 0.3s;
-            min-width: 80px;
+            min-width: 60px;
             text-align: center;
         }
 
@@ -192,8 +206,8 @@
             border-radius: 15px;
             border: 3px solid rgba(255,215,0,0.5);
             transition: all 0.3s;
-            font-size: 6vw;
-            min-width: 80px;
+            font-size: 5vw;
+            min-width: 50px;
             font-weight: 900;
             color: #ffd700;
             text-align: center;
@@ -211,17 +225,17 @@
             background: linear-gradient(135deg, #722f37 0%, #4b1f24 100%); /* wine red gradient */
             border: none;
             color: white;
-            font-size: 8vw;
-            padding: 20px;
-            border-radius: 20px;
+            font-size: 6.5vw;
+            padding: 15px;
+            border-radius: 18px;
             cursor: pointer;
             margin: 10px auto; /* center */
             font-weight: 900;
             box-shadow: 0 10px 30px rgba(114, 47, 55, 0.7);
             touch-action: manipulation;
             display: block;
-            width: 50%; /* reduced by 50% */
-            max-width: 260px;
+            width: 45%; /* reduced */
+            max-width: 220px;
             border: 4px solid rgba(255,255,255,0.3);
             transition: transform 0.1s, background 0.3s, opacity 0.3s;
             letter-spacing: 2px;
@@ -243,20 +257,21 @@
             cursor: not-allowed;
         }
 
-        /* Play again button left full width (unchanged) */
+        /* Play again button */
         #playAgainBtn {
             background: linear-gradient(135deg, #00d4ff 0%, #0099ff 100%);
             border: none;
             color: white;
-            font-size: 7vw;
-            padding: 20px;
-            border-radius: 20px;
+            font-size: 6vw;
+            padding: 15px;
+            border-radius: 18px;
             cursor: pointer;
-            margin: 10px 0;
+            margin: 10px auto;
             font-weight: 900;
             box-shadow: 0 10px 30px rgba(0, 153, 255, 0.5);
             touch-action: manipulation;
-            width: 100%;
+            width: 70%;
+            max-width: 280px;
             border: 4px solid rgba(255,255,255,0.3);
             transition: transform 0.1s, opacity 0.5s;
             letter-spacing: 2px;
@@ -284,17 +299,17 @@
             background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
             border: none;
             color: #1a1a2e;
-            font-size: 5vw;
-            padding: 12px;
-            border-radius: 15px;
+            font-size: 4.5vw;
+            padding: 10px;
+            border-radius: 12px;
             cursor: pointer;
             margin: 8px auto; /* center */
             font-weight: 900;
             box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
             touch-action: manipulation;
             display: block;
-            width: 50%; /* reduced by 50% */
-            max-width: 220px;
+            width: 45%; /* reduced */
+            max-width: 200px;
             border: 3px solid rgba(255,255,255,0.3);
             transition: transform 0.1s;
             letter-spacing: 1px;
@@ -420,9 +435,9 @@
         /* Responsive and accessibility improvements */
         @media (min-width: 600px) {
             .stat-box {
-                font-size: 3vw;
-                min-width: 180px;
-                max-width: 220px;
+                font-size: 1vw;
+                min-width: 160px;
+                max-width: 200px;
             }
 
             .stat-label {
@@ -430,28 +445,33 @@
             }
 
             .stat-value {
-                font-size: 2.5vw;
+                font-size: 2.2vw;
             }
 
             .bet-btn {
-                font-size: 2.5vw;
-                padding: 12px 18px;
-                min-width: 100px;
+                font-size: 1.8vw;
+                padding: 10px 14px;
+                min-width: 70px;
             }
 
             .bet-display {
                 font-size: 2.5vw;
-                min-width: 100px;
+                min-width: 50px;
             }
 
             #spinBtn {
-                font-size: 3vw;
-                padding: 15px;
+                font-size: 2.2vw;
+                padding: 12px;
+            }
+
+            #playAgainBtn {
+                font-size: 2vw;
+                padding: 12px;
             }
 
             #paytableBtn {
-                font-size: 1.8vw;
-                padding: 10px;
+                font-size: 1.5vw;
+                padding: 8px;
             }
 
             .message {
@@ -480,6 +500,7 @@
     </style>
 </head>
 <body>
+<div class="box" id="box">
     <div class="container" id="container">
         <div class="stats-container">
             <div class="stat-box" id="creditsBox" role="region" aria-label="Credits">
@@ -511,8 +532,6 @@
         <button id="playAgainBtn" onclick="playAgain()" aria-label="Play again" aria-hidden="true">PLAY AGAIN?</button>
 
         <div class="message" id="message" role="alert" aria-live="assertive"></div>
-
-        <button id="paytableBtn" onclick="showPaytable()" aria-label="Show paytable">💎 PAYTABLE 💎</button>
     </div>
 
     <div class="paytable-overlay" id="paytableOverlay" onclick="hidePaytable()" role="dialog" aria-modal="true" aria-labelledby="paytableTitle" tabindex="-1">
@@ -529,6 +548,7 @@
             <button id="closePaytableBtn" onclick="hidePaytable()" aria-label="Close paytable">CLOSE</button>
         </div>
     </div>
+</div>
 
     <script>
         let credits = 50;
@@ -827,22 +847,17 @@
                 messageEl.className = 'message win';
 
                 if (results[0] === '7️⃣' && results[1] === '7️⃣' && results[2] === '7️⃣') {
-                    messageEl.textContent = `🎉 JACKPOT! ${winAmount}! 🎉`;
                     playJackpotSound();
                     launchFireworks();
                     haptic('heavy');
                 } else if (results[0] === results[1] && results[1] === results[2]) {
-                    messageEl.textContent = `🎉 WIN ${winAmount}! 🎉`;
                     playWinSound();
                     launchFireworks();
                     haptic('heavy');
                 } else {
-                    messageEl.textContent = `✨ WIN ${winAmount}! ✨`;
                     playWinSound();
                     haptic('medium');
                 }
-            } else {
-                document.getElementById('message').textContent = 'TRY AGAIN!';
             }
 
             updateDisplay();

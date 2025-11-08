@@ -23,6 +23,7 @@
             background: transparent; /* allow image to show through fully */
             border-radius: 15px; padding: 15px; box-shadow: 0 0 50px rgba(0,0,0,0.25);
             width: 100%; max-width: 600px; height: 100vh; max-height: 100vh; display: flex; flex-direction: column; overflow-y: auto;
+            margin-top: 50px;
         }
         .paytable { background: rgba(255, 215, 0, 0.08); border: 2px solid rgba(255,215,0,0.95); border-radius: 8px; padding: 8px; margin-bottom: 10px; font-size: clamp(0.65em, 2.5vw, 0.85em); }
         .paytable-row { display: flex; justify-content: space-between; padding: 3px 8px; border-bottom: 1px solid rgba(255, 215, 0, 0.2); }
@@ -336,35 +337,31 @@
         document.querySelectorAll('.card').forEach(card => card.classList.remove('held'));
       }
 
-      // ========== BET CONTROLS: single-tap only ==========
+      // ========== BET CONTROLS: Improved responsiveness ==========
       const betMinusEl = document.getElementById('betMinus');
       const betPlusEl  = document.getElementById('betPlus');
       const betDisplayEl = document.getElementById('betDisplay');
       function updateBetDisplay() { betDisplayEl.textContent = bet; }
 
-      // Remove any legacy handlers to avoid double triggers
-      betMinusEl.onclick = null;
-      betPlusEl.onclick = null;
-
-      function setupBetButtonSingle(el, stepFn, canRun) {
-        el.addEventListener('click', (e) => {
-          if (!canRun()) return;
-          stepFn();
-          requestAnimationFrame(playBeep);
-        }, { passive: true });
+      function changeBet(delta) {
+        if (gameState !== 'betting') return;
+        const newBet = bet + delta;
+        if (newBet >= 1 && newBet <= Math.min(credits, 10)) {
+          bet = newBet;
+          updateBetDisplay();
+          playBeep();
+        }
       }
 
-      setupBetButtonSingle(
-        betMinusEl,
-        () => { if (gameState === 'betting' && bet > 1) { bet--; updateBetDisplay(); } },
-        () => gameState === 'betting' && bet > 1
-      );
+      betMinusEl.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        changeBet(-1);
+      });
 
-      setupBetButtonSingle(
-        betPlusEl,
-        () => { if (gameState === 'betting' && bet < Math.min(credits, 10)) { bet++; updateBetDisplay(); } },
-        () => gameState === 'betting' && bet < Math.min(credits, 10)
-      );
+      betPlusEl.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        changeBet(1);
+      });
 
       // ========== DEAL/DRAW ==========
       const dealButton = document.getElementById('dealButton');
