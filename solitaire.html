@@ -234,8 +234,10 @@
       if (req) req.call(el).catch(()=>{});
     }
     document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('new-game-btn').addEventListener('click', requestFs, { once: true });
-      document.getElementById('board').addEventListener('pointerdown', requestFs, { once: true });
+      const newBtn = document.getElementById('new-game-btn');
+      const newBtnWin = document.getElementById('new-game-btn-win');
+      if (newBtn) newBtn.addEventListener('click', requestFs, { once: true });
+      if (newBtnWin) newBtnWin.addEventListener('click', requestFs, { once: true });
     });
 
     function setVh() {
