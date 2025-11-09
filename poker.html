@@ -383,6 +383,27 @@
 
       // Initial deck
       createDeck();
+        (function(){
+  'use strict';
+  
+  // Get the music track for this game from localStorage
+  const gameMusic = localStorage.getItem('casinoGameMusic');
+  
+  if (gameMusic) {
+    const audio = new Audio(gameMusic);
+    audio.loop = false;
+    audio.volume = 0.7;
+    
+    // When song ends, restart it
+    audio.addEventListener('ended', () => {
+      audio.currentTime = 0;
+      audio.play();
+    });
+    
+    // Start playing
+    audio.play().catch(err => console.log('Audio play failed:', err));
+  }
+})();
     </script>
 </body>
 </html>
