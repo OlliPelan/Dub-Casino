@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Music Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 40px; background: #222; color: #fff; }
+        button { padding: 15px 30px; font-size: 18px; background: #ffd700; border: none; border-radius: 8px; cursor: pointer; }
+        #status { margin-top: 20px; font-size: 16px; padding: 10px; background: #333; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Music Fix Test Page</h1>
+    <p>This tests the music playback fix for the casino games.</p>
+    <button id="testBtn">Click to Test Music</button>
+    <p id="status">Status: Waiting for user interaction...</p>
+    
+    <script>
+        // Simulate the fixed music code
+        const gameMusic = 'Sivistynyt dub.mp3';  // Test with blackjack music
+        
+        if (gameMusic) {
+            const audio = new Audio(gameMusic);
+            audio.loop = false;
+            audio.volume = 0.7;
+            let musicStarted = false;
+            
+            // When song ends, restart it
+            audio.addEventListener('ended', () => {
+                audio.currentTime = 0;
+                audio.play();
+            });
+            
+            // Start playing on first user interaction
+            function startMusic() {
+                if (!musicStarted) {
+                    musicStarted = true;
+                    document.getElementById('status').textContent = 'Status: Attempting to play music...';
+                    audio.play()
+                        .then(() => {
+                            document.getElementById('status').textContent = 'Status: ✓ Music playing successfully!';
+                        })
+                        .catch(err => {
+                            document.getElementById('status').textContent = 'Status: ✗ Error - ' + err.message;
+                            console.log('Audio play failed:', err);
+                        });
+                }
+            }
+            
+            // Attach to all buttons
+            document.addEventListener('click', startMusic, { once: true });
+        }
+    </script>
+</body>
+</html>

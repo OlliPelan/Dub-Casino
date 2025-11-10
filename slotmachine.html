@@ -1062,6 +1062,7 @@
     const audio = new Audio(gameMusic);
     audio.loop = false;
     audio.volume = 0.7;
+    let musicStarted = false;
     
     // When song ends, restart it
     audio.addEventListener('ended', () => {
@@ -1069,8 +1070,16 @@
       audio.play();
     });
     
-    // Start playing
-    audio.play().catch(err => console.log('Audio play failed:', err));
+    // Start playing on first user interaction
+    function startMusic() {
+      if (!musicStarted) {
+        musicStarted = true;
+        audio.play().catch(err => console.log('Audio play failed:', err));
+      }
+    }
+    
+    // Attach to all buttons
+    document.addEventListener('click', startMusic, { once: true });
   }
 })();
 </script>
