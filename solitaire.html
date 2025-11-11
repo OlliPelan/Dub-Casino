@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="screen-orientation" content="portrait">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1e3c72">
@@ -19,11 +20,28 @@
       position: fixed;
       -webkit-text-size-adjust: 100%;
       overscroll-behavior: none;
-      background: url('https://cdn.abacus.ai/images/61532888-b4fb-486e-a6e6-6048b597d710.png') center center / cover no-repeat fixed;
-      /* Moved background here for better mobile visibility */
-      background-attachment: fixed;
-      background-size: cover;
-      background-position: center center;
+      touch-action: manipulation;
+      -ms-touch-action: manipulation;
+    }
+
+    html {
+      background: #2c1810;
+    }
+
+    html::before {
+      content: '';
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100%;
+      height: 100%;
+      max-width: 768px;
+      max-height: 1344px;
+      background: url('/JPEG-kuva-4A27-A52C-19-0') center center no-repeat;
+      background-size: 100% auto;
+      z-index: -1;
+      pointer-events: none;
     }
 
     body {
@@ -34,21 +52,72 @@
       user-select: none;
       -webkit-user-select: none;
       padding-bottom: env(safe-area-inset-bottom, 0);
-      background: transparent; /* transparent to show html background */
+      background: transparent;
     }
 
+ .corner-btn {
+  position: fixed;
+  left: 1rem;      /* etäisyys vasemmasta reunasta */
+  bottom: 1rem;    /* etäisyys alareunasta */
+  padding: 0.75rem 1.25rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 20rem;
+  background-color: gold;
+  color: rgb(0, 0, 0);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  z-index: 10001;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.mute-btn {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  padding: 0.75rem;
+  font-size: 1.2rem;
+  border: none;
+  border-radius: 50%;
+  background-color: rgba(255, 215, 0, 0.9);
+  color: rgb(0, 0, 0);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  z-index: 10001;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Responsiivisesti pienempi mobiilissa */
+@media (max-width: 600px) {
+  .corner-btn {
+    font-size: 0.9rem;
+    padding: 0.6rem 1rem;
+    left: 0.75rem;
+    bottom: 1rem;
+  }
+  .mute-btn {
+    width: 45px;
+    height: 45px;
+    font-size: 1rem;
+  }
+}
     #game-container {
       flex: 1;
       display: flex;
       flex-direction: column;
       padding: 8px;
-      padding-top: 68px; /* moved up 60px from 128px */
+      padding-top: 68px;
       overflow: hidden;
       height: 100dvh;
       height: calc(var(--vh, 1vh) * 100);
       touch-action: none;
-      background: rgba(0, 0, 0, 0.4);
-      backdrop-filter: blur(2px);
+      background: rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(1px);
     }
 
     #controls {
@@ -186,8 +255,13 @@
       #drag-clone { width: 40px; height: 56px; }
     }
   </style>
+  
+
 </head>
 <body>
+<button class="corner-btn" onclick="goBackToLobby()" >←</button>
+<button class="mute-btn" id="muteBtn" onclick="toggleMute()">🔊</button>
+
   <div id="game-container">
     <div id="controls">
       <div id="score-display">Score: 0 | Moves: 0</div>
@@ -265,6 +339,7 @@
       if (e.ctrlKey) e.preventDefault();
     }, { passive: false });
 
+    document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
     ['gesturestart','gesturechange','gestureend'].forEach(type => {
       document.addEventListener(type, e => e.preventDefault(), { passive: false });
     });
@@ -535,6 +610,71 @@
     }
 
     newGame();
+    
+    // ========== MUSIC & NAVIGATION ==========
+    let currentGameAudio = null;
+    let lobbyAudioForBack = null;
+    
+    function goBackToLobby() {
+      // Stop current game music
+      if (currentGameAudio) {
+        currentGameAudio.pause();
+        currentGameAudio = null;
+      }
+      
+      // Start lobby music
+      const lobbyTracks = ['07 - Imagooo feat. Kimmovuohenkasvattamakoira (Remix) (1).mp3', 'Dollarit dub.mp3'];
+      lobbyAudioForBack = new Audio(lobbyTracks[0]);
+      lobbyAudioForBack.volume = localStorage.getItem('casinoMusicMuted') === 'true' ? 0 : 0.7;
+      lobbyAudioForBack.play().catch(err => console.log('Lobby audio play failed:', err));
+      
+      // Navigate to lobby
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 100);
+    }
+    
+    function toggleMute() {
+      const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
+      const newMutedState = !isMuted;
+      localStorage.setItem('casinoMusicMuted', newMutedState);
+      
+      const muteBtn = document.getElementById('muteBtn');
+      muteBtn.textContent = newMutedState ? '🔇' : '🔊';
+      
+      if (currentGameAudio) {
+        currentGameAudio.volume = newMutedState ? 0 : 0.7;
+      }
+    }
+    
+    (function(){
+      'use strict';
+      
+      // Get the music track for this game from localStorage
+      const gameMusic = localStorage.getItem('casinoGameMusic');
+      const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
+      
+      // Update mute button
+      const muteBtn = document.getElementById('muteBtn');
+      muteBtn.textContent = isMuted ? '🔇' : '🔊';
+      
+      if (gameMusic) {
+        currentGameAudio = new Audio(gameMusic);
+        currentGameAudio.loop = false;
+        currentGameAudio.volume = isMuted ? 0 : 0.7;
+        
+        // When song ends, restart it
+        currentGameAudio.addEventListener('ended', () => {
+          currentGameAudio.currentTime = 0;
+          currentGameAudio.play();
+        });
+        
+        // Start playing automatically when page loads
+        setTimeout(() => {
+          currentGameAudio.play().catch(err => console.log('Audio play failed:', err));
+        }, 100);
+      }
+    })();
   </script>
 </body>
 </html>
