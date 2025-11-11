@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="screen-orientation" content="portrait" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <title>Blackjack</title>
 <style>
@@ -18,6 +19,27 @@
   color: rgb(0, 0, 0);
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  z-index: 1000;
+}
+
+.mute-btn {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  padding: 0.75rem;
+  font-size: 1.2rem;
+  border: none;
+  border-radius: 50%;
+  background-color: rgba(255, 215, 0, 0.9);
+  color: rgb(0, 0, 0);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  z-index: 1000;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Responsiivisesti pienempi mobiilissa */
@@ -27,6 +49,11 @@
     padding: 0.6rem 1rem;
     left: 0.75rem;
     bottom: 1rem;
+  }
+  .mute-btn {
+    width: 45px;
+    height: 45px;
+    font-size: 1rem;
   }
 }
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -111,7 +138,8 @@
 </style>
 </head>
 <body>
-<button class="corner-btn" onclick="window.history.back()" >←</button>
+<button class="corner-btn" onclick="goBackToLobby()" >←</button>
+<button class="mute-btn" id="muteBtn" onclick="toggleMute()">🔊</button>
   <div class="game-container">
     <div class="message" id="message">Place your bet and press DEAL!</div>
     <div class="cards-area">
@@ -161,34 +189,69 @@ function endRound(message){ gameState='betting'; messageEl.textContent=message; 
 betMinus.addEventListener('click',()=>{ if(gameState==='betting' && bet>10){ bet-=10; betEl.textContent=bet; playChipSound(); } });
 betPlus.addEventListener('click',()=>{ if(gameState==='betting' && bet<balance){ bet+=10; betEl.textContent=bet; playChipSound(); } });
 dealButton.addEventListener('click',()=>{ if(gameState==='betting'){ startRound(); } }); hitButton.addEventListener('click',()=>{ playerHit(); }); standButton.addEventListener('click',()=>{ playerStand(); }); updateUI();
+
+// ========== MUSIC & NAVIGATION ==========
+let currentGameAudio = null;
+let lobbyAudioForBack = null;
+
+function goBackToLobby() {
+  // Stop current game music
+  if (currentGameAudio) {
+    currentGameAudio.pause();
+    currentGameAudio = null;
+  }
+  
+  // Start lobby music
+  const lobbyTracks = ['07 - Imagooo feat. Kimmovuohenkasvattamakoira (Remix) (1).mp3', 'Dollarit dub.mp3'];
+  lobbyAudioForBack = new Audio(lobbyTracks[0]);
+  lobbyAudioForBack.volume = localStorage.getItem('casinoMusicMuted') === 'true' ? 0 : 0.7;
+  lobbyAudioForBack.play().catch(err => console.log('Lobby audio play failed:', err));
+  
+  // Navigate to lobby
+  setTimeout(() => {
+    window.location.href = 'index.html';
+  }, 100);
+}
+
+function toggleMute() {
+  const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
+  const newMutedState = !isMuted;
+  localStorage.setItem('casinoMusicMuted', newMutedState);
+  
+  const muteBtn = document.getElementById('muteBtn');
+  muteBtn.textContent = newMutedState ? '🔇' : '🔊';
+  
+  if (currentGameAudio) {
+    currentGameAudio.volume = newMutedState ? 0 : 0.7;
+  }
+}
+
 (function(){
   'use strict';
   
   // Get the music track for this game from localStorage
   const gameMusic = localStorage.getItem('casinoGameMusic');
+  const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
+  
+  // Update mute button
+  const muteBtn = document.getElementById('muteBtn');
+  muteBtn.textContent = isMuted ? '🔇' : '🔊';
   
   if (gameMusic) {
-    const audio = new Audio(gameMusic);
-    audio.loop = false;
-    audio.volume = 0.7;
-    let musicStarted = false;
+    currentGameAudio = new Audio(gameMusic);
+    currentGameAudio.loop = false;
+    currentGameAudio.volume = isMuted ? 0 : 0.7;
     
     // When song ends, restart it
-    audio.addEventListener('ended', () => {
-      audio.currentTime = 0;
-      audio.play();
+    currentGameAudio.addEventListener('ended', () => {
+      currentGameAudio.currentTime = 0;
+      currentGameAudio.play();
     });
     
-    // Start playing on first user interaction
-    function startMusic() {
-      if (!musicStarted) {
-        musicStarted = true;
-        audio.play().catch(err => console.log('Audio play failed:', err));
-      }
-    }
-    
-    // Attach to all buttons
-    document.addEventListener('click', startMusic, { once: true });
+    // Start playing automatically when page loads
+    setTimeout(() => {
+      currentGameAudio.play().catch(err => console.log('Audio play failed:', err));
+    }, 100);
   }
 })();
 </script>

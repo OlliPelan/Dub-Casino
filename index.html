@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <title>Casino Lobby</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="screen-orientation" content="portrait" />
   <style>
     html, body { margin: 0; padding: 0; background: #000; height: 100%; overscroll-behavior: none; touch-action: none; }
     * { -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; }
@@ -17,9 +18,62 @@
     .dialog button { background: #ffd56b; border: none; color: #3a2b10; padding: 6px 10px; border-radius: 7px; font: 700 12px/1 system-ui, sans-serif; cursor: pointer; }
     .start-overlay { padding-top: 60px; position: fixed; inset: 0; background: url('dc.png') center/cover no-repeat; display: grid; place-items: center; z-index: 9; }
     .start-overlay button { background: #ffd56b; border: none; border-radius: 12px; padding: 16px 18px; color: #3a2b10; font: 800 16px/1 system-ui, sans-serif; cursor: pointer; }
+    
+    .quit-btn {
+      position: fixed;
+      right: 1rem;
+      top: 1rem;
+      padding: 0.75rem 1.25rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 20rem;
+      background-color: rgba(255, 77, 77, 0.9);
+      color: rgb(255, 255, 255);
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      z-index: 1000;
+      font-weight: bold;
+    }
+    
+    .mute-btn {
+      position: fixed;
+      right: 1rem;
+      bottom: 1rem;
+      padding: 0.75rem;
+      font-size: 1.2rem;
+      border: none;
+      border-radius: 50%;
+      background-color: rgba(255, 215, 0, 0.9);
+      color: rgb(0, 0, 0);
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      z-index: 1000;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    @media (max-width: 600px) {
+      .quit-btn {
+        font-size: 0.9rem;
+        padding: 0.6rem 1rem;
+        right: 0.75rem;
+        top: 1rem;
+      }
+      .mute-btn {
+        width: 45px;
+        height: 45px;
+        font-size: 1rem;
+      }
+    }
   </style>
 </head>
 <body>
+  <button class="quit-btn" id="quitBtn" onclick="quitToStart()" style="display: none;">Quit</button>
+  <button class="mute-btn" id="muteBtn" onclick="toggleMute()" style="display: none;">🔊</button>
+  
   <div id="game-root">
     <canvas id="game"></canvas>
     <div class="start-overlay" id="startOverlay">
@@ -104,9 +158,10 @@
         track = trackOrTracks;
       }
 
+      const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
       currentAudio = new Audio(track);
       currentAudio.loop = false;
-      currentAudio.volume = 0.7;
+      currentAudio.volume = isMuted ? 0 : 0.7;
 
       currentAudio.addEventListener('ended', () => {
         if (Array.isArray(trackOrTracks)) {
@@ -163,12 +218,37 @@
 
     const startOverlay = document.getElementById('startOverlay');
     const startBtn = document.getElementById('startBtn');
+    const quitBtn = document.getElementById('quitBtn');
+    const muteBtn = document.getElementById('muteBtn');
     let started = false;
+    
+    // Initialize mute button state
+    const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
+    muteBtn.textContent = isMuted ? '🔇' : '🔊';
+    
     startBtn.addEventListener('click', () => { 
       started = true; 
       startOverlay.style.display = 'none';
+      quitBtn.style.display = 'block';
+      muteBtn.style.display = 'flex';
       playMusic(ASSETS.music.lobby);
     });
+    
+    function quitToStart() {
+      window.location.href = 'index.html';
+    }
+    
+    function toggleMute() {
+      const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
+      const newMutedState = !isMuted;
+      localStorage.setItem('casinoMusicMuted', newMutedState);
+      
+      muteBtn.textContent = newMutedState ? '🔇' : '🔊';
+      
+      if (currentAudio) {
+        currentAudio.volume = newMutedState ? 0 : 0.7;
+      }
+    }
 
     const bgImg = new Image();
     bgImg.crossOrigin = 'anonymous';
