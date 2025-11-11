@@ -23,7 +23,7 @@
       padding: 0;
     }
 
-    /* Use uploaded image as a responsive 100% width background while keeping aspect ratio */
+    /* Responsive 100% width background (keeps aspect ratio) */
     html::before {
       content: '';
       position: fixed;
@@ -33,7 +33,7 @@
       width: 100%;
       height: 100%;
       background: url('https://static.abacusaicdn.net/images/85a153ca-b007-4c35-93c2-72695e002421.png') center top no-repeat;
-      background-size: 100% auto; /* width 100%, height auto - keeps aspect ratio and is responsive */
+      background-size: 100% auto;
       z-index: -1;
       pointer-events: none;
     }
@@ -101,15 +101,72 @@
       margin-top: 32px;
       box-shadow: inset 0 2px 8px rgba(0,0,0,0.4);
       overflow: hidden;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
     }
+
+    /* Loader overlay (centered) */
+    .loader-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: auto;
+    }
+    .loader-card {
+      width: calc(100% - 40px);
+      max-width: 680px;
+      background: rgba(6,6,6,0.75);
+      color: #ffd56b;
+      border-radius: 8px;
+      padding: 18px;
+      box-sizing: border-box;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+      font-size: 14px;
+    }
+    .loader-card h3 { margin: 0 0 8px 0; color: #ffd56b; }
+    .loader-status { white-space: pre-wrap; color: #fff; margin-bottom: 8px; max-height: 160px; overflow: auto; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px; }
+    .loader-actions { display: flex; gap: 8px; justify-content: flex-end; }
+    .btn { padding: 8px 12px; background: #ffd56b; color: #000; border: none; border-radius: 6px; cursor: pointer; }
+    .btn.secondary { background: rgba(255,255,255,0.08); color: #ffd56b; border: 1px solid rgba(255,213,107,0.12); }
+    .hint { color: #ddd; font-size: 13px; margin-top: 8px; }
+
+    /* small fallback content */
+    .fallback {
+      text-align: center;
+      padding: 12px;
+      color: #fff;
+    }
+
   </style>
 </head>
 <body>
   <div class="game-container" id="solitaire-root">
     <h2 style="color:#ffd56b; margin: 8px 0 0 0;">Solitaire</h2>
 
-    <div class="board" id="board">
-      <!-- Your solitaire card layout goes here -->
+    <div class="board" id="board" role="main" aria-label="Game board">
+      <div class="fallback" id="fallback">
+        <div style="font-size:18px; color:#ffd56b; margin-bottom:8px;">Loading game...</div>
+        <div style="color:#fff;">If the board remains blank, the game's JavaScript asset might be missing or failed to load.</div>
+      </div>
+
+      <!-- Loader overlay is shown while trying to load scripts -->
+      <div class="loader-overlay" id="loaderOverlay" aria-hidden="false">
+        <div class="loader-card">
+          <h3>Solitaire — Loader & diagnostics</h3>
+          <div class="loader-status" id="loaderStatus">Attempting to load game scripts...</div>
+          <div class="loader-actions">
+            <button class="btn" id="retryBtn">Retry</button>
+            <button class="btn secondary" id="consoleBtn">Show Console</button>
+          </div>
+          <div class="hint">Tip: check DevTools → Network for 404s and paste failures here if loader can't find files.</div>
+        </div>
+      </div>
     </div>
 
     <button id="backBtn" class="corner-btn" aria-label="Back">←</button>
@@ -118,38 +175,169 @@
   </div>
 
 <script>
-/* Solitaire page: play game music if set by lobby; provide mobile-friendly mute and back that stops music and returns to start overlay */
+/* Enhanced loader + diagnostics for solitaire.html
+   - Attempts to load likely script filenames sequentially
+   - Shows errors so you can see what file(s) are missing
+   - If a script loads successfully, it removes the overlay so your game's init code runs
+*/
+
 (function(){
   'use strict';
 
+  const candidateScripts = [
+    'solitaire.js',
+    'solitaire.min.js',
+    'dist/solitaire.js',
+    'dist/solitaire.min.js',
+    'app.js',
+    'game.js',
+    'solitaire.bundle.js',
+    'assets/solitaire.js',
+    'js/solitaire.js'
+  ];
+
+  const statusEl = document.getElementById('loaderStatus');
+  const overlay = document.getElementById('loaderOverlay');
+  const fallback = document.getElementById('fallback');
+
+  // Audio / UI state (keeps your previous behavior)
   let currentGameAudio = null;
 
+  function logStatus(msg) {
+    console.log('[Solitaire loader] ' + msg);
+    if (!statusEl) return;
+    statusEl.textContent = statusEl.textContent + '\n' + msg;
+    statusEl.scrollTop = statusEl.scrollHeight;
+  }
+
+  function clearStatus() {
+    if (statusEl) statusEl.textContent = '';
+  }
+
+  // Try to load scripts in order. Returns a Promise that resolves when one script loads.
+  function tryLoadScripts(list) {
+    clearStatus();
+    logStatus('Trying candidate script files (in order):\n' + list.join('\n'));
+
+    // Try to quickly check existence with HEAD; if HEAD fails, fallback to adding script tag.
+    // We'll attempt to load each candidate until one succeeds.
+    let index = 0;
+
+    return new Promise((resolve, reject) => {
+      function tryNext() {
+        if (index >= list.length) {
+          reject(new Error('No candidate script could be loaded.'));
+          return;
+        }
+        const url = list[index++];
+        logStatus('Checking: ' + url);
+
+        // First try a fetch HEAD to see if file exists (some servers may block HEAD; we'll fallback)
+        fetch(url, { method: 'HEAD' }).then(resp => {
+          if (resp.ok) {
+            logStatus('Found (HEAD ok): ' + url + ' — attempting to load as script.');
+            injectScript(url).then(() => resolve(url)).catch(err => {
+              logStatus('Script load failed after HEAD success: ' + url + ' — ' + err);
+              tryNext();
+            });
+          } else {
+            logStatus('HEAD returned ' + resp.status + ' for ' + url + '. Trying to inject anyway (some hosts block HEAD).');
+            injectScript(url).then(() => resolve(url)).catch(err => {
+              logStatus('Inject failed: ' + url + ' — ' + err);
+              tryNext();
+            });
+          }
+        }).catch(headErr => {
+          // HEAD failed (CORS/blocked). Try injecting script tag directly.
+          logStatus('HEAD failed for ' + url + ' (' + headErr + '), attempting direct script injection.');
+          injectScript(url).then(() => resolve(url)).catch(err => {
+            logStatus('Direct inject failed: ' + url + ' — ' + err);
+            tryNext();
+          });
+        });
+      }
+      tryNext();
+    });
+  }
+
+  function injectScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.async = false; // preserve ordering if script loads another dependency
+      s.onload = function() {
+        logStatus('Script loaded: ' + src);
+        // Give the script a short moment to execute its init before resolving
+        setTimeout(() => {
+          resolve();
+        }, 80);
+      };
+      s.onerror = function(ev){
+        reject(new Error('Failed to load script: ' + src));
+      };
+      document.head.appendChild(s);
+    });
+  }
+
+  // Show overlay until we detect that a global init has occurred or script loaded
+  function hideOverlay() {
+    if (overlay) overlay.style.display = 'none';
+    if (fallback) fallback.style.display = 'none';
+  }
+
+  function showOverlay() {
+    if (overlay) overlay.style.display = 'flex';
+    if (fallback) fallback.style.display = 'block';
+  }
+
+  // Try loader once on page load
+  function startLoading() {
+    showOverlay();
+    tryLoadScripts(candidateScripts).then(loadedUrl => {
+      logStatus('Success: game script loaded -> ' + loadedUrl);
+      // Wait briefly for game to initialize (if the script runs initialization on load)
+      setTimeout(() => {
+        hideOverlay();
+      }, 350);
+    }).catch(err => {
+      logStatus('All attempts failed: ' + err.message);
+      logStatus('Network panel may show 404s for the tried files. Upload the correct JS file or update the HTML to reference it.');
+      // Leave overlay visible so the user can retry and see errors.
+    });
+  }
+
+  // Bind retry and console buttons
+  const retryBtn = document.getElementById('retryBtn');
+  const consoleBtn = document.getElementById('consoleBtn');
+  if (retryBtn) retryBtn.addEventListener('click', () => {
+    // Clear status and retry
+    statusEl.textContent = 'Retrying...\n';
+    startLoading();
+  });
+  if (consoleBtn) consoleBtn.addEventListener('click', () => {
+    // Open devtools is not possible programmatically; help user know to check console
+    alert('Open DevTools → Console and Network to see detailed errors (or copy the status text shown).');
+  });
+
+  // Back / Mute behavior (keeps your earlier logic)
   function toggleMute() {
     const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
     const newMutedState = !isMuted;
     localStorage.setItem('casinoMusicMuted', newMutedState);
-
     const mBtn = document.getElementById('muteBtn');
     if (mBtn) mBtn.textContent = newMutedState ? '🔇' : '🔊';
-
     if (currentGameAudio) currentGameAudio.volume = newMutedState ? 0 : 0.7;
   }
 
   function goBackToLobby() {
-    // Stop current game music
     if (currentGameAudio) {
       try { currentGameAudio.pause(); } catch(e) {}
       currentGameAudio = null;
     }
-
-    // Ensure lobby doesn't auto-play previously selected track; show start overlay instead
     localStorage.removeItem('casinoGameMusic');
-
-    // Navigate back to index which shows the start overlay by default
     setTimeout(() => { window.location.href = 'index.html'; }, 80);
   }
 
-  // Bind UI
   const backBtn = document.getElementById('backBtn');
   const muteBtn = document.getElementById('muteBtn');
 
@@ -158,7 +346,6 @@
     backBtn.addEventListener('touchstart', function(e){ e.preventDefault(); goBackToLobby(); }, { passive: false });
   }
 
-  // Mute bindings (click + touch)
   const initiallyMuted = localStorage.getItem('casinoMusicMuted') === 'true';
   if (muteBtn) {
     muteBtn.textContent = initiallyMuted ? '🔇' : '🔊';
@@ -166,26 +353,19 @@
     muteBtn.addEventListener('touchstart', function(e){ e.preventDefault(); toggleMute(); }, { passive: false });
   }
 
-  // Attempt to play previously selected game music (set by lobby during user gesture)
+  // Attempt to play selected game music if available (fallback)
   const gameMusic = localStorage.getItem('casinoGameMusic');
   const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
-
   if (gameMusic) {
     currentGameAudio = new Audio(gameMusic);
     currentGameAudio.loop = true;
     currentGameAudio.volume = isMuted ? 0 : 0.7;
-
-    currentGameAudio.addEventListener('ended', () => {
-      try { currentGameAudio.currentTime = 0; currentGameAudio.play(); } catch(e) {}
-    });
-
-    // Attempt to play -- lobby generally started the audio in a gesture, but this is a fallback
     setTimeout(() => {
       currentGameAudio.play().catch(err => console.log('Audio play failed (fallback):', err));
     }, 80);
   }
 
-  // Safety: prevent multi-touch pinch zoom that might interfere with the UI
+  // Prevent multi-touch pinch zoom
   window.addEventListener('touchstart', function(e){
     if (e.touches && e.touches.length > 1) {
       e.preventDefault();
@@ -194,7 +374,30 @@
 
   window.addEventListener('gesturestart', function(e){ e.preventDefault(); });
 
+  // Start loader after a short delay (so overlay rendering is visible)
+  setTimeout(startLoading, 120);
+
+  // If you want the loader to hide automatically when game sets a ready flag,
+  // the game's init can set window.SOLITAIRE_READY = true; then we can poll for that.
+  (function pollForReady(){
+    if (window.SOLITAIRE_READY) {
+      logStatus('Detected window.SOLITAIRE_READY flag — hiding overlay.');
+      hideOverlay();
+      return;
+    }
+    // If a known global initializer exists (common names), hide overlay after 2s
+    const knownInits = ['Solitaire', 'solitaire', 'GAME', 'Game'];
+    const anyPresent = knownInits.some(n => !!window[n]);
+    if (anyPresent) {
+      logStatus('Detected global initializer object — hiding overlay.');
+      hideOverlay();
+      return;
+    }
+    setTimeout(pollForReady, 500);
+  })();
+
 })();
 </script>
+
 </body>
 </html>
