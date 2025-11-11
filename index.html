@@ -13,8 +13,6 @@
     .dialog { position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%); background: rgba(16,8,16,0.95); border: 1px solid #caa86a; color: #f1e8d0; padding: 10px 12px; width: min(80vw, 260px); border-radius: 8px; box-shadow: 0 8px 26px rgba(0,0,0,0.5); display: none; z-index: 10; pointer-events: auto; }
     .dialog h4 { margin: 0 0 6px 0; font: 700 15px/1.25 system-ui, sans-serif; color: #ffd56b; }
     .dialog p { margin: 0 0 10px 0; font: 12px/1.35 system-ui, sans-serif; opacity: 0.9; }
-    .dialog .row { display: flex; gap: 6px; justify-content: flex-end; }
-    .dialog button { background: #ffd56b; border: none; color: #3a2b10; padding: 6px 10px; border-radius: 7px; font: 700 12px/1 system-ui, sans-serif; cursor: pointer; }
     .start-overlay { padding-top: 60px; position: fixed; inset: 0; background: url('dc.png') center/cover no-repeat; display: grid; place-items: center; z-index: 9; }
     .start-overlay button { background: #ffd56b; border: none; border-radius: 12px; padding: 16px 18px; color: #3a2b10; font: 800 16px/1 system-ui, sans-serif; cursor: pointer; }
 
@@ -44,7 +42,7 @@
       border-radius: 50%;
       background-color: rgba(255, 215, 0, 0.9);
       color: rgb(0, 0, 0);
-      cursor: pointer;
+      cursor: button;
       box-shadow: 0 2px 6px rgba(0,0,0,0.3);
       z-index: 1000;
       width: 50px;
@@ -127,7 +125,7 @@
 
  function playMusic(trackOrTracks) {
    if (currentAudio) {
-     currentAudio.pause();
+     try { currentAudio.pause(); } catch(e) {}
      currentAudio = null;
    }
 
@@ -177,7 +175,7 @@ canvas.addEventListener('click', (e) => {
     const url = ASSETS.pages[clickedZone.id];
 
     if (gameMusic) {
-      if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+      if (currentAudio) { try { currentAudio.pause(); } catch(e){} currentAudio = null; }
       currentAudio = new Audio(gameMusic);
       currentAudio.loop = true;
       const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
@@ -201,7 +199,7 @@ canvas.addEventListener('touchstart', (e) => {
     const url = ASSETS.pages[clickedZone.id];
 
     if (gameMusic) {
-      if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+      if (currentAudio) { try { currentAudio.pause(); } catch(e){} currentAudio = null; }
       currentAudio = new Audio(gameMusic);
       currentAudio.loop = true;
       const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
@@ -287,58 +285,23 @@ function drawBackground(vp) {
   }
 }
 
-// ---------------- Idle Glow ----------------
-let idleTimer = null;
-const IDLE_MS = 5000;
-let highlightZones = false;
-
-function resetIdleTimer() {
-  highlightZones = false;
-  if (idleTimer) clearTimeout(idleTimer);
-  idleTimer = setTimeout(() => { highlightZones = true; }, IDLE_MS);
-}
-
-// Reset on user input
-['mousemove','mousedown','touchstart','touchmove','keydown','click'].forEach(ev => {
-  window.addEventListener(ev, resetIdleTimer, { passive: true });
-});
-resetIdleTimer();
-
 function render(dt) {
   const vp = getViewport();
   ctx.clearRect(0,0,canvas.width, canvas.height);
   drawBackground(vp);
 
-  // draw zones glow when idle
-  if (highlightZones) {
-    ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-    zones.forEach(z => {
-      const x = vp.offX + z.x * vp.scale;
-      const y = vp.offY + z.y * vp.scale;
-      const w = z.w * vp.scale;
-      const h = z.h * vp.scale;
-      const grad = ctx.createRadialGradient(x + w/2, y + h/2, Math.min(w,h)*0.1, x + w/2, y + h/2, Math.max(w,h));
-      grad.addColorStop(0, 'rgba(255,215,0,0.95)');
-      grad.addColorStop(0.4, 'rgba(255,215,0,0.35)');
-      grad.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(x - w*0.25, y - h*0.25, w*1.5, h*1.5);
-    });
-    ctx.restore();
-  }
-
-  // (Optional) subtle outlines
+  // subtle zone outlines intentionally left out (no glow)
   ctx.save();
-  ctx.globalAlpha = 0.085;
+  ctx.globalAlpha = 0.05;
   ctx.fillStyle = '#000';
   zones.forEach(z => {
     const x = vp.offX + z.x * vp.scale;
     const y = vp.offY + z.y * vp.scale;
     const w = z.w * vp.scale;
     const h = z.h * vp.scale;
-    ctx.strokeStyle = 'rgba(255,215,0,0.06)';
-    ctx.lineWidth = 3;
+    // optional: faint stroke to hint zones (very subtle)
+    ctx.strokeStyle = 'rgba(255,215,0,0.03)';
+    ctx.lineWidth = 2;
     ctx.strokeRect(x, y, w, h);
   });
   ctx.restore();

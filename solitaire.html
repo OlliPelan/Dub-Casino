@@ -86,26 +86,12 @@
       align-items: center;
       justify-content: center;
     }
-    .quit-btn {
-      position: fixed;
-      right: 1rem;
-      top: 1rem;
-      padding: 0.75rem 1.25rem;
-      font-size: 1rem;
-      border: none;
-      border-radius: 20rem;
-      background-color: rgba(255, 77, 77, 0.95);
-      color: #fff;
-      cursor: pointer;
-      z-index: 1000;
-    }
 
     @media (max-width: 600px) {
       .corner-btn { font-size: 0.9rem; padding: 0.6rem 1rem; left: 0.75rem; bottom: 1rem; }
       .mute-btn { width: 45px; height: 45px; font-size: 1rem; }
     }
 
-    /* Simple placeholder board area (your in-game UI will replace this) */
     .board {
       width: 100%;
       max-width: 720px;
@@ -128,11 +114,11 @@
 
     <button id="backBtn" class="corner-btn" aria-label="Back">←</button>
     <button id="muteBtn" class="mute-btn" aria-label="Mute">🔊</button>
-    <button id="quitBtn" class="quit-btn" aria-label="Quit">Quit</button>
+    <!-- Quit button intentionally removed per request -->
   </div>
 
 <script>
-/* Solitaire page: play game music if set by lobby; provide mobile-friendly mute and quit/back that stops music and returns to start overlay */
+/* Solitaire page: play game music if set by lobby; provide mobile-friendly mute and back that stops music and returns to start overlay */
 (function(){
   'use strict';
 
@@ -165,17 +151,11 @@
 
   // Bind UI
   const backBtn = document.getElementById('backBtn');
-  const quitBtn = document.getElementById('quitBtn');
   const muteBtn = document.getElementById('muteBtn');
 
   if (backBtn) {
     backBtn.addEventListener('click', goBackToLobby);
     backBtn.addEventListener('touchstart', function(e){ e.preventDefault(); goBackToLobby(); }, { passive: false });
-  }
-
-  if (quitBtn) {
-    quitBtn.addEventListener('click', goBackToLobby);
-    quitBtn.addEventListener('touchstart', function(e){ e.preventDefault(); goBackToLobby(); }, { passive: false });
   }
 
   // Mute bindings (click + touch)
@@ -199,8 +179,7 @@
       try { currentGameAudio.currentTime = 0; currentGameAudio.play(); } catch(e) {}
     });
 
-    // Attempt to play -- may be blocked in some mobile browsers until a user gesture,
-    // but lobby already started it with user gesture when opening this page.
+    // Attempt to play -- lobby generally started the audio in a gesture, but this is a fallback
     setTimeout(() => {
       currentGameAudio.play().catch(err => console.log('Audio play failed (fallback):', err));
     }, 80);
@@ -214,9 +193,6 @@
   }, { passive: false });
 
   window.addEventListener('gesturestart', function(e){ e.preventDefault(); });
-
-  // Optionally: if you want the page to explicitly show an overlay when arriving from a quit,
-  // you already clear casinoGameMusic above so index will show start overlay by default.
 
 })();
 </script>
