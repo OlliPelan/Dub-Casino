@@ -1,10 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
 <head>
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Casino Lobby</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <meta name="screen-orientation" content="portrait" />
   <style>
     html, body { margin: 0; padding: 0; background: #000; height: 100%; overscroll-behavior: none; touch-action: none; }
     * { -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; }
@@ -13,12 +12,12 @@
 
     .dialog { position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%); background: rgba(16,8,16,0.95); border: 1px solid #caa86a; color: #f1e8d0; padding: 10px 12px; width: min(80vw, 260px); border-radius: 8px; box-shadow: 0 8px 26px rgba(0,0,0,0.5); display: none; z-index: 10; pointer-events: auto; }
     .dialog h4 { margin: 0 0 6px 0; font: 700 15px/1.25 system-ui, sans-serif; color: #ffd56b; }
-    .dialog p  { margin: 0 0 10px 0; font: 12px/1.35 system-ui, sans-serif; opacity: 0.9; }
+    .dialog p { margin: 0 0 10px 0; font: 12px/1.35 system-ui, sans-serif; opacity: 0.9; }
     .dialog .row { display: flex; gap: 6px; justify-content: flex-end; }
     .dialog button { background: #ffd56b; border: none; color: #3a2b10; padding: 6px 10px; border-radius: 7px; font: 700 12px/1 system-ui, sans-serif; cursor: pointer; }
     .start-overlay { padding-top: 60px; position: fixed; inset: 0; background: url('dc.png') center/cover no-repeat; display: grid; place-items: center; z-index: 9; }
     .start-overlay button { background: #ffd56b; border: none; border-radius: 12px; padding: 16px 18px; color: #3a2b10; font: 800 16px/1 system-ui, sans-serif; cursor: pointer; }
-    
+
     .quit-btn {
       position: fixed;
       right: 1rem;
@@ -34,7 +33,7 @@
       z-index: 1000;
       font-weight: bold;
     }
-    
+
     .mute-btn {
       position: fixed;
       right: 1rem;
@@ -54,245 +53,306 @@
       align-items: center;
       justify-content: center;
     }
-    
+
     @media (max-width: 600px) {
-      .quit-btn {
-        font-size: 0.9rem;
-        padding: 0.6rem 1rem;
-        right: 0.75rem;
-        top: 1rem;
-      }
-      .mute-btn {
-        width: 45px;
-        height: 45px;
-        font-size: 1rem;
-      }
+      .quit-btn { font-size: 0.9rem; padding: 0.6rem 1rem; right: 0.75rem; top: 1rem; }
+      .mute-btn { width: 45px; height: 45px; font-size: 1rem; }
     }
   </style>
 </head>
 <body>
-  <button class="quit-btn" id="quitBtn" onclick="quitToStart()" style="display: none;">Quit</button>
-  <button class="mute-btn" id="muteBtn" onclick="toggleMute()" style="display: none;">🔊</button>
-  
   <div id="game-root">
-    <canvas id="game"></canvas>
-    <div class="start-overlay" id="startOverlay">
-      <button id="startBtn">Tap to Start</button>
-    </div>
-    <div class="dialog" id="dialog">
-      <h4 id="dlgTitle">Play Game?</h4>
-      <p id="dlgText">Approach a table to play.</p>
-      <div class="row">
-        <button id="dlgPlay">Play</button>
-      </div>
-    </div>
-
+    <canvas id="game" role="application" aria-label="Game lobby"></canvas>
   </div>
 
-  <script>
-  (function(){
-    'use strict';
-    const hud = document.getElementById('hud');
-    const hlog = (msg) => hud && (hud.textContent = msg);
+  <div id="startOverlay" class="start-overlay">
+    <button id="startBtn">Tap to Start</button>
+  </div>
 
-    const ASSETS = {
-      background: 'https://cdn.abacus.ai/images/ba393218-5d4c-4d90-a7e1-64870ec7fbfc.png',
-      characterSprite: 'https://cdn.abacus.ai/images/9cd2ff79-9132-42f0-9f09-a461e700938c.png',
-      pages: {
-        blackjack: 'blackjack.html',
-        poker: 'poker.html',
-        slots: 'slotmachine.html',
-        solitaire: 'solitaire.html'
-      },
-      music: {
-        lobby: ['07 - Imagooo feat. Kimmovuohenkasvattamakoira (Remix) (1).mp3', 'Dollarit dub.mp3'],
-        blackjack: 'Sivistynyt dub.mp3',
-        poker: 'Terve dub.mp3',
-        slots: 'Dollarit dub.mp3',
-        solitaire: '10 - (Pelastakaa) Koisotie (Remix).mp3'
-      }
-    };
+  <button id="quitBtn" class="quit-btn" style="display:none;">Quit</button>
+  <button id="muteBtn" class="mute-btn" style="display:none;">🔊</button>
 
-    ['gesturestart','gesturechange','gestureend','dblclick'].forEach(t => {
-      document.addEventListener(t, e => e.preventDefault(), { passive:false });
-    });
+<script>
+(function(){
+ 'use strict';
+ const ASSETS = {
+   background: 'https://cdn.abacus.ai/images/ba393218-5d4c-4d90-a7e1-64870ec7fbfc.png',
+   pages: {
+     blackjack: 'blackjack.html',
+     poker: 'poker.html',
+     slots: 'slotmachine.html',
+     solitaire: 'solitaire.html'
+   },
+   music: {
+     lobby: ['07 - Imagooo feat. Kimmovuohenkasvattamakoira (Remix) (1).mp3', 'Dollarit dub.mp3'],
+     blackjack: 'Sivistynyt dub.mp3',
+     poker: 'Terve dub.mp3',
+     slots: 'Dollarit dub.mp3',
+     solitaire: '10 - (Pelastakaa) Koisotie (Remix).mp3'
+   }
+ };
 
-    const canvas = document.getElementById('game');
-    const ctx = canvas.getContext('2d');
+ // disable some gestures at root
+ ['gesturestart','gesturechange','gestureend','dblclick'].forEach(t => {
+   document.addEventListener(t, e => e.preventDefault(), { passive:false });
+ });
 
-    function resizeCanvas() {
-      const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
-      const w = Math.floor(window.innerWidth);
-      const h = Math.floor(window.innerHeight);
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
-      canvas.style.width = w + 'px';
-      canvas.style.height = h + 'px';
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
+ const canvas = document.getElementById('game');
+ const ctx = canvas.getContext('2d');
 
-    const world = { width: 768, height: 1365 };
+ function resizeCanvas() {
+   const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+   const w = Math.floor(window.innerWidth);
+   const h = Math.floor(window.innerHeight);
+   canvas.width = w * dpr;
+   canvas.height = h * dpr;
+   canvas.style.width = w + 'px';
+   canvas.style.height = h + 'px';
+   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+ }
+ window.addEventListener('resize', resizeCanvas);
+ resizeCanvas();
 
-    const zones = [
-      { id: 'blackjack', label: 'Blackjack', x: world.width/2 - 190, y: 150,  w: 380, h: 200 },
-      { id: 'poker',     label: 'Poker',     x: 30,                  y: 610, w: 280, h: 190 },
-      { id: 'slots',     label: 'Slots',     x: world.width - 310,   y: 610, w: 280, h: 180 },
-      { id: 'solitaire', label: 'Solitaire', x: world.width/2 - 170, y: world.height - 270, w: 340, h: 170 }
-    ];
+ const world = { width: 768, height: 1365 };
 
-    let currentAudio = null;
-    let lobbyTrackIndex = 0;
+ const zones = [
+   { id: 'blackjack', label: 'Blackjack', x: world.width/2 - 190, y: 150, w: 380, h: 200 },
+   { id: 'poker', label: 'Poker', x: 30, y: 610, w: 280, h: 190 },
+   { id: 'slots', label: 'Slots', x: world.width - 310, y: 610, w: 280, h: 180 },
+   { id: 'solitaire', label: 'Solitaire', x: world.width/2 - 170, y: world.height - 270, w: 340, h: 170 }
+ ];
 
-    function playMusic(trackOrTracks) {
-      if (currentAudio) {
-        currentAudio.pause();
-        currentAudio = null;
-      }
+ let currentAudio = null;
+ let lobbyTrackIndex = 0;
 
-      let track;
-      if (Array.isArray(trackOrTracks)) {
-        track = trackOrTracks[lobbyTrackIndex % trackOrTracks.length];
-      } else {
-        track = trackOrTracks;
-      }
+ function playMusic(trackOrTracks) {
+   if (currentAudio) {
+     currentAudio.pause();
+     currentAudio = null;
+   }
 
+   let track;
+   if (Array.isArray(trackOrTracks)) {
+     track = trackOrTracks[lobbyTrackIndex % trackOrTracks.length];
+   } else {
+     track = trackOrTracks;
+   }
+
+   const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
+   currentAudio = new Audio(track);
+   currentAudio.loop = false;
+   currentAudio.volume = isMuted ? 0 : 0.7;
+
+   currentAudio.addEventListener('ended', () => {
+     if (Array.isArray(trackOrTracks)) {
+       lobbyTrackIndex++;
+       playMusic(trackOrTracks);
+     } else {
+       currentAudio.currentTime = 0;
+       currentAudio.play();
+     }
+   });
+
+   currentAudio.play().catch(err => console.log('Audio play failed:', err));
+}
+
+function worldPointFromClient(x, y){
+  const rect = canvas.getBoundingClientRect();
+  const clickX = x - rect.left;
+  const clickY = y - rect.top;
+  const vp = getViewport();
+  const worldX = (clickX - vp.offX) / vp.scale;
+  const worldY = (clickY - vp.offY) / vp.scale;
+  return { worldX, worldY };
+}
+
+// ----------------- GAME SELECT (lobby) -----------------
+// Start the selected game's music inside this user gesture before navigating.
+canvas.addEventListener('click', (e) => {
+  if (!started) return;
+  const { worldX, worldY } = worldPointFromClient(e.clientX, e.clientY);
+  const clickedZone = zones.find(z => worldX >= z.x && worldX <= z.x + z.w && worldY >= z.y && worldY <= z.y + z.h);
+  if (clickedZone) {
+    const gameMusic = ASSETS.music[clickedZone.id];
+    const url = ASSETS.pages[clickedZone.id];
+
+    if (gameMusic) {
+      if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+      currentAudio = new Audio(gameMusic);
+      currentAudio.loop = true;
       const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
-      currentAudio = new Audio(track);
-      currentAudio.loop = false;
       currentAudio.volume = isMuted ? 0 : 0.7;
-
-      currentAudio.addEventListener('ended', () => {
-        if (Array.isArray(trackOrTracks)) {
-          lobbyTrackIndex++;
-          playMusic(trackOrTracks);
-        } else {
-          currentAudio.currentTime = 0;
-          currentAudio.play();
-        }
-      });
-
-      currentAudio.play().catch(err => console.log('Audio play failed:', err));
+      currentAudio.play().catch(err => console.warn('Game audio start failed:', err));
+      localStorage.setItem('casinoGameMusic', gameMusic);
     }
 
-    function worldPointFromClient(x, y){
-      const rect = canvas.getBoundingClientRect();
-      const clickX = x - rect.left;
-      const clickY = y - rect.top;
-      const vp = getViewport();
-      const worldX = (clickX - vp.offX) / vp.scale;
-      const worldY = (clickY - vp.offY) / vp.scale;
-      return { worldX, worldY };
-    }
+    if (url) setTimeout(() => { window.location.href = url; }, 180);
+  }
+});
 
-    canvas.addEventListener('click', (e) => {
-      if (!started) return;
-      const { worldX, worldY } = worldPointFromClient(e.clientX, e.clientY);
-      const clickedZone = zones.find(z => worldX >= z.x && worldX <= z.x + z.w && worldY >= z.y && worldY <= z.y + z.h);
-      if (clickedZone) {
-        const gameMusic = ASSETS.music[clickedZone.id];
-        if (gameMusic) {
-          localStorage.setItem('casinoGameMusic', gameMusic);
-        }
-        const url = ASSETS.pages[clickedZone.id];
-        if (url) window.location.href = url;
-      }
-    });
+canvas.addEventListener('touchstart', (e) => {
+  if (e.target !== canvas || !started) return;
+  e.preventDefault();
+  const t = e.touches[0];
+  const { worldX, worldY } = worldPointFromClient(t.clientX, t.clientY);
+  const clickedZone = zones.find(z => worldX >= z.x && worldX <= z.x + z.w && worldY >= z.y && worldY <= z.y + z.h);
+  if (clickedZone) {
+    const gameMusic = ASSETS.music[clickedZone.id];
+    const url = ASSETS.pages[clickedZone.id];
 
-    canvas.addEventListener('touchstart', (e) => {
-      if (e.target !== canvas || !started) return;
-      e.preventDefault();
-      const t = e.touches[0];
-      const { worldX, worldY } = worldPointFromClient(t.clientX, t.clientY);
-      const clickedZone = zones.find(z => worldX >= z.x && worldX <= z.x + z.w && worldY >= z.y && worldY <= z.y + z.h);
-      if (clickedZone) {
-        const gameMusic = ASSETS.music[clickedZone.id];
-        if (gameMusic) {
-          localStorage.setItem('casinoGameMusic', gameMusic);
-        }
-        const url = ASSETS.pages[clickedZone.id];
-        if (url) window.location.href = url;
-      }
-    });
-
-    const startOverlay = document.getElementById('startOverlay');
-    const startBtn = document.getElementById('startBtn');
-    const quitBtn = document.getElementById('quitBtn');
-    const muteBtn = document.getElementById('muteBtn');
-    let started = false;
-    
-    // Initialize mute button state
-    const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
-    muteBtn.textContent = isMuted ? '🔇' : '🔊';
-    
-    startBtn.addEventListener('click', () => { 
-      started = true; 
-      startOverlay.style.display = 'none';
-      quitBtn.style.display = 'block';
-      muteBtn.style.display = 'flex';
-      playMusic(ASSETS.music.lobby);
-    });
-    
-    function quitToStart() {
-      window.location.href = 'index.html';
-    }
-    
-    function toggleMute() {
+    if (gameMusic) {
+      if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+      currentAudio = new Audio(gameMusic);
+      currentAudio.loop = true;
       const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
-      const newMutedState = !isMuted;
-      localStorage.setItem('casinoMusicMuted', newMutedState);
-      
-      muteBtn.textContent = newMutedState ? '🔇' : '🔊';
-      
-      if (currentAudio) {
-        currentAudio.volume = newMutedState ? 0 : 0.7;
-      }
+      currentAudio.volume = isMuted ? 0 : 0.7;
+      currentAudio.play().catch(err => console.warn('Game audio start failed:', err));
+      localStorage.setItem('casinoGameMusic', gameMusic);
     }
 
-    const bgImg = new Image();
-    bgImg.crossOrigin = 'anonymous';
-    bgImg.onerror = () => hlog('bg load error — gradient fallback');
-    bgImg.src = ASSETS.background;
+    if (url) setTimeout(() => { window.location.href = url; }, 180);
+  }
+});
 
-    function getViewport() {
-      const vw = canvas.width / (window.devicePixelRatio || 1);
-      const vh = canvas.height / (window.devicePixelRatio || 1);
-      const scale = Math.min(vw / world.width, vh / world.height);
-      const viewW = world.width * scale;
-      const viewH = world.height * scale;
-      const offX = (vw - viewW) / 2;
-      const offY = (vh - viewH) / 2;
-      return { scale, offX, offY, vw, vh, viewW, viewH };
-    }
+const startOverlay = document.getElementById('startOverlay');
+const startBtn = document.getElementById('startBtn');
+const quitBtn = document.getElementById('quitBtn');
+const muteBtn = document.getElementById('muteBtn');
+let started = false;
 
-    function drawBackground(vp) {
-      if (bgImg.complete && bgImg.naturalWidth > 0) {
-        ctx.imageSmoothingEnabled = false;
-        ctx.drawImage(bgImg, vp.offX, vp.offY, vp.viewW, vp.viewH);
-      } else {
-        const g = ctx.createLinearGradient(0,0,0,canvas.height);
-        g.addColorStop(0, '#2b1730');
-        g.addColorStop(1, '#1a0f1a');
-        ctx.fillStyle = g;
-        ctx.fillRect(0,0,canvas.width, canvas.height);
-      }
-    }
+// Initialize mute button state
+const initiallyMuted = localStorage.getItem('casinoMusicMuted') === 'true';
+if (muteBtn) {
+  muteBtn.textContent = initiallyMuted ? '🔇' : '🔊';
+  // click + touch
+  muteBtn.addEventListener('click', toggleMute);
+  muteBtn.addEventListener('touchstart', function(e){ e.preventDefault(); toggleMute(); }, { passive: false });
+}
 
-    function render(dt) {
-      const vp = getViewport();
-      ctx.clearRect(0,0,canvas.width, canvas.height);
-      drawBackground(vp);
-    }
+startBtn.addEventListener('click', () => {
+  started = true;
+  startOverlay.style.display = 'none';
+  quitBtn.style.display = 'block';
+  muteBtn.style.display = 'flex';
+  playMusic(ASSETS.music.lobby);
+});
 
-    let last = performance.now();
-    function loop(now) {
-      const dt = Math.min(48, now - last); last = now;
-      if (started) { render(dt); }
-      requestAnimationFrame(loop);
-    }
-    requestAnimationFrame(loop);
-  })();
-  </script>
+function quitToStart() {
+  // Stop any playing audio and show start overlay (index should show overlay by default)
+  if (currentAudio) { try { currentAudio.pause(); } catch(e){} currentAudio = null; }
+  localStorage.removeItem('casinoGameMusic');
+  setTimeout(() => { window.location.href = 'index.html'; }, 80);
+}
+
+function toggleMute() {
+  const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
+  const newMutedState = !isMuted;
+  localStorage.setItem('casinoMusicMuted', newMutedState);
+
+  const mBtn = document.getElementById('muteBtn');
+  if (mBtn) mBtn.textContent = newMutedState ? '🔇' : '🔊';
+
+  if (currentAudio) currentAudio.volume = newMutedState ? 0 : 0.7;
+}
+
+quitBtn.addEventListener('click', quitToStart);
+
+// Background image for canvas rendering
+const bgImg = new Image();
+bgImg.crossOrigin = 'anonymous';
+bgImg.onerror = () => console.log('bg load error — gradient fallback');
+bgImg.src = ASSETS.background;
+
+function getViewport() {
+  const vw = canvas.width / (window.devicePixelRatio || 1);
+  const vh = canvas.height / (window.devicePixelRatio || 1);
+  const scale = Math.min(vw / world.width, vh / world.height);
+  const viewW = world.width * scale;
+  const viewH = world.height * scale;
+  const offX = (vw - viewW) / 2;
+  const offY = (vh - viewH) / 2;
+  return { scale, offX, offY, vw, vh, viewW, viewH };
+}
+
+function drawBackground(vp) {
+  if (bgImg.complete && bgImg.naturalWidth > 0) {
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(bgImg, vp.offX, vp.offY, vp.viewW, vp.viewH);
+  } else {
+    const g = ctx.createLinearGradient(0,0,0,canvas.height);
+    g.addColorStop(0, '#2b1730');
+    g.addColorStop(1, '#1a0f1a');
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,canvas.width, canvas.height);
+  }
+}
+
+// ---------------- Idle Glow ----------------
+let idleTimer = null;
+const IDLE_MS = 5000;
+let highlightZones = false;
+
+function resetIdleTimer() {
+  highlightZones = false;
+  if (idleTimer) clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => { highlightZones = true; }, IDLE_MS);
+}
+
+// Reset on user input
+['mousemove','mousedown','touchstart','touchmove','keydown','click'].forEach(ev => {
+  window.addEventListener(ev, resetIdleTimer, { passive: true });
+});
+resetIdleTimer();
+
+function render(dt) {
+  const vp = getViewport();
+  ctx.clearRect(0,0,canvas.width, canvas.height);
+  drawBackground(vp);
+
+  // draw zones glow when idle
+  if (highlightZones) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    zones.forEach(z => {
+      const x = vp.offX + z.x * vp.scale;
+      const y = vp.offY + z.y * vp.scale;
+      const w = z.w * vp.scale;
+      const h = z.h * vp.scale;
+      const grad = ctx.createRadialGradient(x + w/2, y + h/2, Math.min(w,h)*0.1, x + w/2, y + h/2, Math.max(w,h));
+      grad.addColorStop(0, 'rgba(255,215,0,0.95)');
+      grad.addColorStop(0.4, 'rgba(255,215,0,0.35)');
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(x - w*0.25, y - h*0.25, w*1.5, h*1.5);
+    });
+    ctx.restore();
+  }
+
+  // (Optional) subtle outlines
+  ctx.save();
+  ctx.globalAlpha = 0.085;
+  ctx.fillStyle = '#000';
+  zones.forEach(z => {
+    const x = vp.offX + z.x * vp.scale;
+    const y = vp.offY + z.y * vp.scale;
+    const w = z.w * vp.scale;
+    const h = z.h * vp.scale;
+    ctx.strokeStyle = 'rgba(255,215,0,0.06)';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(x, y, w, h);
+  });
+  ctx.restore();
+}
+
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(48, now - last); last = now;
+  if (started) { render(dt); }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+})();
+</script>
+
 </body>
 </html>
