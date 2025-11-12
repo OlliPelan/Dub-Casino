@@ -55,8 +55,8 @@
 
  .corner-btn {
   position: fixed;
-  left: 1rem;      /* etäisyys vasemmasta reunasta */
-  bottom: 1rem;    /* etäisyys alareunasta */
+  left: 1rem;
+  bottom: 1rem;
   padding: 0.75rem 1.25rem;
   font-size: 1rem;
   border: none;
@@ -90,7 +90,6 @@
   justify-content: center;
 }
 
-/* Responsiivisesti pienempi mobiilissa */
 @media (max-width: 600px) {
   .corner-btn {
     font-size: 0.9rem;
@@ -253,7 +252,7 @@
       #drag-clone { width: 40px; height: 56px; }
     }
   </style>
-  
+
 
 </head>
 <body>
@@ -347,15 +346,39 @@
     let deck = [], stock = [], waste = [], foundations = [[],[],[],[]], tableau = [[],[],[],[],[],[],[]];
     let score = 0, moves = 0, draggedCards = [], draggedFrom = null, isDragging = false, dragClone = null, startX = 0, startY = 0;
 
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    // WebAudio context + master gain for global SFX control
+    let audioContext = null;
+    let masterGain = null;
+
+    // Sound effect mute state (controls masterGain)
+    const SFX_KEY = 'sfxMuted';
+    let soundEffectsMuted = localStorage.getItem(SFX_KEY) === 'true';
+
+    function initAudio() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        masterGain = audioContext.createGain();
+        masterGain.gain.setValueAtTime(soundEffectsMuted ? 0 : 1, audioContext.currentTime);
+        masterGain.connect(audioContext.destination);
+      }
+    }
+
     function playSound(frequency, duration, type = 'sine') {
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      oscillator.connect(gainNode); gainNode.connect(audioContext.destination);
-      oscillator.frequency.value = frequency; oscillator.type = type;
-      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-      oscillator.start(audioContext.currentTime); oscillator.stop(audioContext.currentTime + duration);
+      try {
+        initAudio();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(masterGain);
+        oscillator.frequency.value = frequency;
+        oscillator.type = type;
+        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + duration);
+      } catch (e) {
+        console.log('Audio not available or blocked:', e);
+      }
     }
 
     function haptic(style = 'medium') {
@@ -607,72 +630,29 @@
       }
     }
 
-    newGame();
-    
-    // ========== MUSIC & NAVIGATION ==========
-    let currentGameAudio = null;
-    let lobbyAudioForBack = null;
-    
-    function goBackToLobby() {
-      // Stop current game music
-      if (currentGameAudio) {
-        currentGameAudio.pause();
-        currentGameAudio = null;
-      }
-      
-      // Start lobby music
-      const lobbyTracks = ['07 - Imagooo feat. Kimmovuohenkasvattamakoira (Remix) (1).mp3', 'Dollarit dub.mp3'];
-      lobbyAudioForBack = new Audio(lobbyTracks[0]);
-      lobbyAudioForBack.volume = localStorage.getItem('casinoMusicMuted') === 'true' ? 0 : 0.7;
-      lobbyAudioForBack.play().catch(err => console.log('Lobby audio play failed:', err));
-      
-      // Navigate to lobby
-      setTimeout(() => {
-        window.location.href = 'index.html';
-      }, 100);
-    }
-    
+    // ========== SFX MUTE CONTROL ==========
     function toggleMute() {
-      const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
-      const newMutedState = !isMuted;
-      localStorage.setItem('casinoMusicMuted', newMutedState);
-      
+      soundEffectsMuted = !soundEffectsMuted;
+      localStorage.setItem(SFX_KEY, soundEffectsMuted);
       const muteBtn = document.getElementById('muteBtn');
-      muteBtn.textContent = newMutedState ? '🔇' : '🔊';
-      
-      if (currentGameAudio) {
-        currentGameAudio.volume = newMutedState ? 0 : 0.7;
+      muteBtn.textContent = soundEffectsMuted ? '🔇' : '🔊';
+
+      if (audioContext && masterGain) {
+        try {
+          masterGain.gain.setValueAtTime(soundEffectsMuted ? 0 : 1, audioContext.currentTime);
+        } catch (e) {
+          console.log('Failed to set master gain:', e);
+        }
       }
     }
-    
+
+    // Initialize mute button on load (SFX only)
     (function(){
-      'use strict';
-      
-      // Get the music track for this game from localStorage
-      const gameMusic = localStorage.getItem('casinoGameMusic');
-      const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
-      
-      // Update mute button
       const muteBtn = document.getElementById('muteBtn');
-      muteBtn.textContent = isMuted ? '🔇' : '🔊';
-      
-      if (gameMusic) {
-        currentGameAudio = new Audio(gameMusic);
-        currentGameAudio.loop = false;
-        currentGameAudio.volume = isMuted ? 0 : 0.7;
-        
-        // When song ends, restart it
-        currentGameAudio.addEventListener('ended', () => {
-          currentGameAudio.currentTime = 0;
-          currentGameAudio.play();
-        });
-        
-        // Start playing automatically when page loads
-        setTimeout(() => {
-          currentGameAudio.play().catch(err => console.log('Audio play failed:', err));
-        }, 100);
-      }
+      muteBtn.textContent = soundEffectsMuted ? '🔇' : '🔊';
     })();
+
+    newGame();
   </script>
 </body>
 </html>

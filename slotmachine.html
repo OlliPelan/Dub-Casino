@@ -741,7 +741,14 @@
     let totalSpins = 0;
     let betAmount = 10;
     let isSpinning = false;
+
+    // WebAudio context + master gain for global SFX control
     let audioContext = null;
+    let masterGain = null;
+
+    // Sound effect mute state (controls masterGain)
+    const SFX_KEY = 'sfxMuted';
+    let soundEffectsMuted = localStorage.getItem(SFX_KEY) === 'true';
 
     const symbols = ['🍒', '🍋', '🍊', '🍇', '🔔', '💎', '7️⃣'];
     const weights = [30, 25, 20, 15, 7, 2.5, 0.5];
@@ -763,6 +770,9 @@
     function initAudio() {
         if (!audioContext) {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            masterGain = audioContext.createGain();
+            masterGain.gain.setValueAtTime(soundEffectsMuted ? 0 : 1, audioContext.currentTime);
+            masterGain.connect(audioContext.destination);
         }
     }
 
@@ -773,56 +783,59 @@
             const gainNode = audioContext.createGain();
 
             oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
+            gainNode.connect(masterGain);
 
             oscillator.frequency.value = frequency;
             oscillator.type = type;
 
-            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            // envelope
+            gainNode.gain.setValueAtTime(0.0, audioContext.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.2, audioContext.currentTime + 0.005);
             gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
 
             oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + duration);
+            oscillator.stop(audioContext.currentTime + duration + 0.02);
         } catch (e) {
-            console.log('Audio not available');
+            // If AudioContext not allowed (autoplay policy), fail silently and avoid further errors
+            console.log('Audio not available or blocked:', e);
         }
     }
 
     function playSpinSound() {
-        playSound(200, 0.1, 'square');
+        playSound(200, 0.08, 'square');
     }
 
     function playWinSound() {
-        playSound(523.25, 0.15);
-        setTimeout(() => playSound(659.25, 0.15), 80);
-        setTimeout(() => playSound(783.99, 0.2), 160);
+        playSound(523.25, 0.12);
+        setTimeout(() => playSound(659.25, 0.12), 80);
+        setTimeout(() => playSound(783.99, 0.16), 160);
     }
 
     function playJackpotSound() {
         for (let i = 0; i < 5; i++) {
-            setTimeout(() => playSound(523.25 + i * 100, 0.2), i * 100);
+            setTimeout(() => playSound(523.25 + i * 100, 0.18), i * 100);
         }
     }
 
     function playResetSound() {
-        playSound(440, 0.15);
-        setTimeout(() => playSound(554.37, 0.2), 100);
+        playSound(440, 0.12);
+        setTimeout(() => playSound(554.37, 0.15), 100);
     }
 
     function playGameOverSound() {
-        playSound(200, 0.2, 'sawtooth');
-        setTimeout(() => playSound(150, 0.3, 'sawtooth'), 200);
+        playSound(200, 0.18, 'sawtooth');
+        setTimeout(() => playSound(150, 0.25, 'sawtooth'), 200);
     }
 
     function showPaytable() {
         haptic('light');
-        playSound(400, 0.1);
+        playSound(400, 0.08);
         document.getElementById('paytableOverlay').classList.add('show');
     }
 
     function hidePaytable() {
         haptic('light');
-        playSound(350, 0.1);
+        playSound(350, 0.08);
         document.getElementById('paytableOverlay').classList.remove('show');
     }
 
@@ -1079,70 +1092,27 @@
     }
 
     updateDisplay();
-    
-    // ========== MUSIC & NAVIGATION ==========
-    let currentGameAudio = null;
-    let lobbyAudioForBack = null;
-    
-    function goBackToLobby() {
-      // Stop current game music
-      if (currentGameAudio) {
-        currentGameAudio.pause();
-        currentGameAudio = null;
-      }
-      
-      // Start lobby music
-      const lobbyTracks = ['07 - Imagooo feat. Kimmovuohenkasvattamakoira (Remix) (1).mp3', 'Dollarit dub.mp3'];
-      lobbyAudioForBack = new Audio(lobbyTracks[0]);
-      lobbyAudioForBack.volume = localStorage.getItem('casinoMusicMuted') === 'true' ? 0 : 0.7;
-      lobbyAudioForBack.play().catch(err => console.log('Lobby audio play failed:', err));
-      
-      // Navigate to lobby
-      setTimeout(() => {
-        window.location.href = 'index.html';
-      }, 100);
-    }
-    
+
+    // ========== SFX MUTE CONTROL ==========
     function toggleMute() {
-      const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
-      const newMutedState = !isMuted;
-      localStorage.setItem('casinoMusicMuted', newMutedState);
-      
+      soundEffectsMuted = !soundEffectsMuted;
+      localStorage.setItem(SFX_KEY, soundEffectsMuted);
       const muteBtn = document.getElementById('muteBtn');
-      muteBtn.textContent = newMutedState ? '🔇' : '🔊';
-      
-      if (currentGameAudio) {
-        currentGameAudio.volume = newMutedState ? 0 : 0.7;
+      muteBtn.textContent = soundEffectsMuted ? '🔇' : '🔊';
+
+      if (audioContext && masterGain) {
+        try {
+          masterGain.gain.setValueAtTime(soundEffectsMuted ? 0 : 1, audioContext.currentTime);
+        } catch (e) {
+          console.log('Failed to set master gain:', e);
+        }
       }
     }
-    
+
+    // Initialize mute button on load (SFX only)
     (function(){
-      'use strict';
-      
-      // Get the music track for this game from localStorage
-      const gameMusic = localStorage.getItem('casinoGameMusic');
-      const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
-      
-      // Update mute button
       const muteBtn = document.getElementById('muteBtn');
-      muteBtn.textContent = isMuted ? '🔇' : '🔊';
-      
-      if (gameMusic) {
-        currentGameAudio = new Audio(gameMusic);
-        currentGameAudio.loop = false;
-        currentGameAudio.volume = isMuted ? 0 : 0.7;
-        
-        // When song ends, restart it
-        currentGameAudio.addEventListener('ended', () => {
-          currentGameAudio.currentTime = 0;
-          currentGameAudio.play();
-        });
-        
-        // Start playing automatically when page loads
-        setTimeout(() => {
-          currentGameAudio.play().catch(err => console.log('Audio play failed:', err));
-        }, 100);
-      }
+      muteBtn.textContent = soundEffectsMuted ? '🔇' : '🔊';
     })();
 </script>
 </body>
