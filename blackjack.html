@@ -190,7 +190,7 @@ betMinus.addEventListener('click',()=>{ if(gameState==='betting' && bet>10){ bet
 betPlus.addEventListener('click',()=>{ if(gameState==='betting' && bet<balance){ bet+=10; betEl.textContent=bet; playChipSound(); } });
 dealButton.addEventListener('click',()=>{ if(gameState==='betting'){ startRound(); } }); hitButton.addEventListener('click',()=>{ playerHit(); }); standButton.addEventListener('click',()=>{ playerStand(); }); updateUI();
 
-// ========== MUSIC & NAVIGATION ==========
+/* ========== MUSIC & NAVIGATION ==========
 let currentGameAudio = null;
 let lobbyAudioForBack = null;
 
@@ -242,7 +242,7 @@ function toggleMute() {
       currentGameAudio.play().catch(err => console.log('Audio play failed:', err));
     }, 100);
   }
-})();
+})();*/
 </script>
 </body>
 </html>
