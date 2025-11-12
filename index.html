@@ -82,11 +82,11 @@
      solitaire: 'solitaire.html'
    },
    music: {
-     lobby: ['07 - Imagooo feat. Kimmovuohenkasvattamakoira (Remix) (1).mp3', 'Dollarit dub.mp3'],
-     blackjack: 'Sivistynyt dub.mp3',
-     poker: 'Terve dub.mp3',
-     slots: 'Dollarit dub.mp3',
-     solitaire: '10 - (Pelastakaa) Koisotie (Remix).mp3'
+     lobby: ['07 - Imagooo feat. Kimmovuohenkasvattamakoira (Remix) (1).mp3', 'Dollarit dub.mp3', 'Sivistynyt dub.mp3',
+     'Terve dub.mp3',
+     'Dollarit dub.mp3',
+     '10 - (Pelastakaa) Koisotie (Remix).mp3'],
+     
    }
  };
 
@@ -171,10 +171,10 @@ canvas.addEventListener('click', (e) => {
   const { worldX, worldY } = worldPointFromClient(e.clientX, e.clientY);
   const clickedZone = zones.find(z => worldX >= z.x && worldX <= z.x + z.w && worldY >= z.y && worldY <= z.y + z.h);
   if (clickedZone) {
-    const gameMusic = ASSETS.music[clickedZone.id];
+    //const gameMusic = ASSETS.music[clickedZone.id];
     const url = ASSETS.pages[clickedZone.id];
 
-    if (gameMusic) {
+    /*if (gameMusic) {
       if (currentAudio) { try { currentAudio.pause(); } catch(e){} currentAudio = null; }
       currentAudio = new Audio(gameMusic);
       currentAudio.loop = true;
@@ -182,7 +182,7 @@ canvas.addEventListener('click', (e) => {
       currentAudio.volume = isMuted ? 0 : 0.7;
       currentAudio.play().catch(err => console.warn('Game audio start failed:', err));
       localStorage.setItem('casinoGameMusic', gameMusic);
-    }
+    }*/
 
     if (url) setTimeout(() => { window.location.href = url; }, 180);
   }
@@ -195,10 +195,10 @@ canvas.addEventListener('touchstart', (e) => {
   const { worldX, worldY } = worldPointFromClient(t.clientX, t.clientY);
   const clickedZone = zones.find(z => worldX >= z.x && worldX <= z.x + z.w && worldY >= z.y && worldY <= z.y + z.h);
   if (clickedZone) {
-    const gameMusic = ASSETS.music[clickedZone.id];
+    //const gameMusic = ASSETS.music[clickedZone.id];
     const url = ASSETS.pages[clickedZone.id];
 
-    if (gameMusic) {
+   /* if (gameMusic) {
       if (currentAudio) { try { currentAudio.pause(); } catch(e){} currentAudio = null; }
       currentAudio = new Audio(gameMusic);
       currentAudio.loop = true;
@@ -206,7 +206,7 @@ canvas.addEventListener('touchstart', (e) => {
       currentAudio.volume = isMuted ? 0 : 0.7;
       currentAudio.play().catch(err => console.warn('Game audio start failed:', err));
       localStorage.setItem('casinoGameMusic', gameMusic);
-    }
+    }*/
 
     if (url) setTimeout(() => { window.location.href = url; }, 180);
   }
