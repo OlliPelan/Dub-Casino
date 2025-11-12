@@ -154,6 +154,33 @@
    currentAudio.play().catch(err => console.log('Audio play failed:', err));
 }
 
+// --- game overlay iframe to load games in-page (keeps lobby music playing)
+let gameOverlay = null;
+function openGameOverlay(url) {
+  if (gameOverlay) {
+    // reuse existing overlay if already open
+    gameOverlay.src = url;
+    return;
+  }
+  gameOverlay = document.createElement('iframe');
+  gameOverlay.id = 'gameOverlay';
+  Object.assign(gameOverlay.style, {
+    position: 'fixed', top: '0', left: '0', width: '100%', height: '100%', border: '0', zIndex: 2000, background: '#000'
+  });
+  gameOverlay.src = url;
+  gameOverlay.setAttribute('allowfullscreen', '');
+  document.body.appendChild(gameOverlay);
+  // change quit button to act as overlay closer
+  if (quitBtn) { quitBtn.textContent = 'Close'; quitBtn.dataset.overlayOpen = 'true'; quitBtn.style.display = 'block'; }
+}
+function closeGameOverlay() {
+  if (!gameOverlay) return;
+  try { gameOverlay.src = 'about:blank'; } catch(e){}
+  document.body.removeChild(gameOverlay);
+  gameOverlay = null;
+  if (quitBtn) { quitBtn.textContent = 'Quit'; delete quitBtn.dataset.overlayOpen; }
+}
+
 function worldPointFromClient(x, y){
   const rect = canvas.getBoundingClientRect();
   const clickX = x - rect.left;
@@ -184,7 +211,7 @@ canvas.addEventListener('click', (e) => {
       localStorage.setItem('casinoGameMusic', gameMusic);
     }*/
 
-    if (url) setTimeout(() => { window.location.href = url; }, 180);
+    if (url) setTimeout(() => { openGameOverlay(url); }, 180);
   }
 });
 
@@ -208,7 +235,7 @@ canvas.addEventListener('touchstart', (e) => {
       localStorage.setItem('casinoGameMusic', gameMusic);
     }*/
 
-    if (url) setTimeout(() => { window.location.href = url; }, 180);
+    if (url) setTimeout(() => { openGameOverlay(url); }, 180);
   }
 });
 
@@ -236,6 +263,8 @@ startBtn.addEventListener('click', () => {
 });
 
 function quitToStart() {
+  // If a game overlay is open, close it instead of navigating away
+  if (gameOverlay) { closeGameOverlay(); return; }
   // Stop any playing audio and show start overlay (index should show overlay by default)
   if (currentAudio) { try { currentAudio.pause(); } catch(e){} currentAudio = null; }
   localStorage.removeItem('casinoGameMusic');
@@ -319,3 +348,5 @@ requestAnimationFrame(loop);
 
 </body>
 </html>
+
+--- i want to remove the song per game functionality. i want to play the mp3 tracks mentioned in the code randomly when game starts. games should not stop the music either. music should play troughout the lobby and games randomly and forever, unless muted. make mute button icon simpler. btw present mute button does not work in mobile. open in playground
