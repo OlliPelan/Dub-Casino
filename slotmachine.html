@@ -760,12 +760,12 @@
         }
     }
 
-    /*function initAudio() {
+    function initAudio() {
         if (!audioContext) {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
         }
     }
-*/
+
     function playSound(frequency, duration, type = 'sine') {
         try {
             initAudio();
@@ -1081,11 +1081,11 @@
     updateDisplay();
     
     // ========== MUSIC & NAVIGATION ==========
-   /* let currentGameAudio = null;
+    let currentGameAudio = null;
     let lobbyAudioForBack = null;
     
     function goBackToLobby() {
-      */
+      
       // Navigate to lobby
       setTimeout(() => {
         window.location.href = 'index.html';
@@ -1108,15 +1108,15 @@
     (function(){
       'use strict';
       
-      /* Get the music track for this game from localStorage
+      // Get the music track for this game from localStorage
       const gameMusic = localStorage.getItem('casinoGameMusic');
       const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
-      */
+      
       // Update mute button
       const muteBtn = document.getElementById('muteBtn');
       muteBtn.textContent = isMuted ? '🔇' : '🔊';
       
-     /* if (gameMusic) {
+      if (gameMusic) {
         currentGameAudio = new Audio(gameMusic);
         currentGameAudio.loop = false;
         currentGameAudio.volume = isMuted ? 0 : 0.7;
@@ -1130,7 +1130,7 @@
         // Start playing automatically when page loads
         setTimeout(() => {
           currentGameAudio.play().catch(err => console.log('Audio play failed:', err));
-        }, 100);*/
+        }, 100);
       }
     })();
 </script>
