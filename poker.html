@@ -442,17 +442,6 @@
       let lobbyAudioForBack = null;
       
       function goBackToLobby() {
-        // Stop current game music
-        if (currentGameAudio) {
-          currentGameAudio.pause();
-          currentGameAudio = null;
-        }
-        
-        // Start lobby music
-        const lobbyTracks = ['07 - Imagooo feat. Kimmovuohenkasvattamakoira (Remix) (1).mp3', 'Dollarit dub.mp3'];
-        lobbyAudioForBack = new Audio(lobbyTracks[0]);
-        lobbyAudioForBack.volume = localStorage.getItem('casinoMusicMuted') === 'true' ? 0 : 0.7;
-        lobbyAudioForBack.play().catch(err => console.log('Lobby audio play failed:', err));
         
         // Navigate to lobby
         setTimeout(() => {
