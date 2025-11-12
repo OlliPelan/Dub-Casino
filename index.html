@@ -181,6 +181,10 @@ function closeGameOverlay() {
   if (quitBtn) { quitBtn.textContent = 'Quit'; delete quitBtn.dataset.overlayOpen; }
 }
 
+window.addEventListener('message', (e) => {
+  if (e.data === 'closeGame') closeGameOverlay();
+});
+
 function worldPointFromClient(x, y){
   const rect = canvas.getBoundingClientRect();
   const clickX = x - rect.left;

@@ -138,7 +138,7 @@
 </style>
 </head>
 <body>
-<button class="corner-btn" onclick="window.history.back()" >←</button>
+<button class="corner-btn" onclick="parent.postMessage('closeGame', '*')">←</button>
 <button class="mute-btn" id="muteBtn" onclick="toggleMute()">🔊</button>
   <div class="game-container">
     <div class="message" id="message">Place your bet and press DEAL!</div>
