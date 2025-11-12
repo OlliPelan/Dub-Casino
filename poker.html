@@ -253,7 +253,7 @@
       function shuffleDeck() {
         for (let i = deck.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
-          [deck[i], deck[j] = [deck[j], deck[i]];
+          [deck[i], deck[j]] = [deck[j], deck[i]];
         }
       }
       function drawCard() { return deck.pop(); }
@@ -436,26 +436,70 @@
 
       // Initial deck
       createDeck();
-
-      // ========== SOUND TOGGLE ==========
+      
+      // ========== MUSIC & NAVIGATION ==========
+      let currentGameAudio = null;
+      let lobbyAudioForBack = null;
+      
+      function goBackToLobby() {
+        // Stop current game music
+        if (currentGameAudio) {
+          currentGameAudio.pause();
+          currentGameAudio = null;
+        }
+        
+        // Start lobby music
+        const lobbyTracks = ['07 - Imagooo feat. Kimmovuohenkasvattamakoira (Remix) (1).mp3', 'Dollarit dub.mp3'];
+        lobbyAudioForBack = new Audio(lobbyTracks[0]);
+        lobbyAudioForBack.volume = localStorage.getItem('casinoMusicMuted') === 'true' ? 0 : 0.7;
+        lobbyAudioForBack.play().catch(err => console.log('Lobby audio play failed:', err));
+        
+        // Navigate to lobby
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 100);
+      }
+      
       function toggleMute() {
         const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
         const newMutedState = !isMuted;
         localStorage.setItem('casinoMusicMuted', newMutedState);
-
+        
         const muteBtn = document.getElementById('muteBtn');
         muteBtn.textContent = newMutedState ? '🔇' : '🔊';
+        
+        if (currentGameAudio) {
+          currentGameAudio.volume = newMutedState ? 0 : 0.7;
+        }
       }
-
+      
       (function(){
         'use strict';
-
-        // Update mute button based on saved preference
+        
+        // Get the music track for this game from localStorage
+        const gameMusic = localStorage.getItem('casinoGameMusic');
         const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
-
+        
         // Update mute button
         const muteBtn = document.getElementById('muteBtn');
         muteBtn.textContent = isMuted ? '🔇' : '🔊';
+        
+        if (gameMusic) {
+          currentGameAudio = new Audio(gameMusic);
+          currentGameAudio.loop = false;
+          currentGameAudio.volume = isMuted ? 0 : 0.7;
+          
+          // When song ends, restart it
+          currentGameAudio.addEventListener('ended', () => {
+            currentGameAudio.currentTime = 0;
+            currentGameAudio.play();
+          });
+          
+          // Start playing automatically when page loads
+          setTimeout(() => {
+            currentGameAudio.play().catch(err => console.log('Audio play failed:', err));
+          }, 100);
+        }
       })();
     </script>
 </body>
