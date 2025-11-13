@@ -138,7 +138,7 @@
 </style>
 </head>
 <body>
-<button class="corner-btn" onclick="playBackAndClose()">←</button>
+<button class="corner-btn" onclick="parent.postMessage('closeGame', '*')">←</button>
 <button class="mute-btn" id="muteBtn" onclick="toggleMute()">🔊</button>
   <div class="game-container">
     <div class="message" id="message">Place your bet and press DEAL!</div>
@@ -169,34 +169,6 @@ function playLoseSound(){ const o=audioCtx.createOscillator(), g=audioCtx.create
 function playButtonSound(){ const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.value=800; o.type='square'; g.gain.setValueAtTime(0.1,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.05); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime+0.05);} 
 function playChipSound(){ const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.value=1000; o.type='sine'; g.gain.setValueAtTime(0.2,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.08); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime+0.08);} 
 
-// ---- External SFX (uploaded files) ----
-const sfxBackPath = 'fx1.mp3';
-const sfxWinPaths = ['fx4.mp3', 'fx5.mp3', 'fx6.mp3', 'fx7.mp3'];
-
-function isSfxMuted(){
-  return localStorage.getItem('casinoMusicMuted') === 'true';
-}
-
-function playSfxFile(path, volume = 1.0){
-  if(isSfxMuted()) return;
-  try{
-    const s = new Audio(path);
-    s.volume = Math.max(0, Math.min(1, volume));
-    s.play().catch(err=>{ console.log('SFX play failed:', err); });
-  }catch(e){ console.log('SFX error', e); }
-}
-
-function playRandomWinSfx(){
-  const i = Math.floor(Math.random()*sfxWinPaths.length);
-  playSfxFile(sfxWinPaths[i], 0.9);
-}
-
-function playBackAndClose(){
-  playSfxFile(sfxBackPath, 0.9);
-  setTimeout(()=>{ parent.postMessage('closeGame', '*'); }, 150);
-}
-
-
 const suits=['♠','♥','♦','♣']; const values=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
 let deck=[], playerHand=[], dealerHand=[], balance=1000, bet=10, gameState='betting';
 const balanceEl=document.getElementById('balance'), betEl=document.getElementById('bet'), messageEl=document.getElementById('message'), dealerCardsEl=document.getElementById('dealerCards'), playerCardsEl=document.getElementById('playerCards'), dealButton=document.getElementById('dealButton'), hitButton=document.getElementById('hitButton'), standButton=document.getElementById('standButton'), betMinus=document.getElementById('betMinus'), betPlus=document.getElementById('betPlus');
@@ -212,7 +184,7 @@ function startRound(){ if(bet>balance){ messageEl.textContent='Not enough balanc
 function playerHit(){ if(gameState!=='playerTurn') return; playButtonSound(); playerHand.push(deck.pop()); playCardSound(); updateUI(); const pv=calculateHandValue(playerHand); if(pv>21) endRound('Bust! You lose.'); }
 function playerStand(){ if(gameState!=='playerTurn') return; playButtonSound(); gameState='dealerTurn'; messageEl.textContent='Dealer is playing...'; hitButton.disabled=true; standButton.disabled=true; dealerPlay(); }
 function dealerPlay(){ updateUI(); let cardsToAdd=[]; let dv=calculateHandValue(dealerHand); while(dv<17){ const nc=deck.pop(); cardsToAdd.push(nc); dealerHand.push(nc); dv=calculateHandValue(dealerHand); } for(let i=0;i<cardsToAdd.length;i++){ dealerHand.pop(); } let delay=0; cardsToAdd.forEach((card,index)=>{ setTimeout(()=>{ dealerHand.push(card); playCardSound(); updateUI(); if(index===cardsToAdd.length-1){ setTimeout(()=>{ determineWinner(); },500); } }, delay); delay+=500; }); if(cardsToAdd.length===0){ setTimeout(()=>{ determineWinner(); },500); } }
-function determineWinner(){ const pv=calculateHandValue(playerHand); const dv=calculateHandValue(dealerHand); if(dv>21 || pv>dv){ balance+=bet*2; playWinSound(); endRound('You win!'); } else if(pv===dv){ balance+=bet; playButtonSound(); endRound('Push. It\'s a tie.'); } else { playLoseSound(); endRound('Dealer wins. You lose.'); } }
+function determineWinner(){ const pv=calculateHandValue(playerHand); const dv=calculateHandValue(dealerHand); if(dv>21 || pv>dv){ balance+=bet*2; playRandomWinSfx(); endRound('You win!'); } else if(pv===dv){ balance+=bet; playButtonSound(); endRound('Push. It\'s a tie.'); } else { playLoseSound(); endRound('Dealer wins. You lose.'); } }
 function endRound(message){ gameState='betting'; messageEl.textContent=message; dealButton.disabled=false; hitButton.disabled=true; standButton.disabled=true; betMinus.disabled=false; betPlus.disabled=false; updateUI(); }
 betMinus.addEventListener('click',()=>{ if(gameState==='betting' && bet>10){ bet-=10; betEl.textContent=bet; playChipSound(); } });
 betPlus.addEventListener('click',()=>{ if(gameState==='betting' && bet<balance){ bet+=10; betEl.textContent=bet; playChipSound(); } });
