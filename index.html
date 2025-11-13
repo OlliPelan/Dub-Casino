@@ -88,8 +88,8 @@
     'Dollarit dub.mp3',
     '10 - (Pelastakaa) Koisotie (Remix).mp3']
    },
-   // short sound effects to play when selecting a game (do not stop music)
-   sfx: ['fx1.mp3','fx3.mp3','fx4.mp3','fx5.mp3','fx6.mp3','fx7.mp3']
+   // sound effect to play when selecting any game (does not stop music)
+   gameSelectSfx: 'fx3.mp3'
  };
 
  // disable some gestures at root
@@ -167,15 +167,12 @@
    if (!musicAudio) playNextTrack();
  }
 
- // play a short, one-shot SFX without stopping music
- function playRandomSfx() {
+ // play the game-select SFX without stopping music
+ function playGameSelectSfx() {
    try {
-     const sfxList = ASSETS.sfx.filter(Boolean);
-     if (!sfxList.length) return;
-     const pick = sfxList[Math.floor(Math.random() * sfxList.length)];
-     const fx = new Audio(pick);
+     const fx = new Audio(ASSETS.gameSelectSfx);
      fx.loop = false;
-     fx.volume = isMuted ? 0 : 0.85; // fx slightly louder by default
+     fx.volume = isMuted ? 0 : 0.85;
      fx.play().catch(err => console.warn('SFX play failed:', err));
    } catch(e) { console.warn('SFX error', e); }
  }
@@ -220,7 +217,7 @@
  }
 
  // ---- GAME SELECT (lobby) ----
- // Start the selected game's sound effect inside this user gesture before navigating.
+ // Play fx3.mp3 when selecting any game (does not stop music)
  canvas.addEventListener('click', (e) => {
    if (!started) return;
    const { worldX, worldY } = worldPointFromClient(e.clientX, e.clientY);
@@ -228,8 +225,8 @@
    if (clickedZone) {
      const url = ASSETS.pages[clickedZone.id];
 
-     // play a random SFX (does NOT stop or replace the lobby music)
-     playRandomSfx();
+     // play fx3.mp3 (does NOT stop or replace the lobby music)
+     playGameSelectSfx();
 
      if (url) setTimeout(() => { openGameOverlay(url); }, 180);
    }
@@ -243,7 +240,7 @@
    const clickedZone = zones.find(z => worldX >= z.x && worldX <= z.x + z.w && worldY >= z.y && worldY <= z.y + z.h);
    if (clickedZone) {
      const url = ASSETS.pages[clickedZone.id];
-     playRandomSfx();
+     playGameSelectSfx();
      if (url) setTimeout(() => { openGameOverlay(url); }, 180);
    }
  }, { passive:false });
