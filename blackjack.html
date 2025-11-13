@@ -9,7 +9,7 @@
 <style>
    .corner-btn {
   position: fixed;
-  left: 1rem;      /* etäisyys vasemmasta reunasta */
+  left: 1rem;    /* etäisyys vasemmasta reunasta */
   bottom: 1rem;    /* etäisyys alareunasta */
   padding: 0.75rem 1.25rem;
   font-size: 1rem;
@@ -64,7 +64,7 @@
   }
   @media (min-width: 769px) and (min-height: 1345px) {
     html, body {
-      background-size: 768px 1344px;
+    background-size: 768px 1344px;
     }
   }
 
@@ -138,25 +138,25 @@
 </style>
 </head>
 <body>
-<button class="corner-btn" onclick="parent.postMessage('closeGame', '*')">←</button>
+<button class="corner-btn" onclick="playBackAndClose()">←</button>
 <button class="mute-btn" id="muteBtn" onclick="toggleMute()">🔊</button>
   <div class="game-container">
     <div class="message" id="message">Place your bet and press DEAL!</div>
     <div class="cards-area">
-      <div class="cards-container" id="dealerCards"></div>
-      <div class="cards-container" id="playerCards"></div>
+    <div class="cards-container" id="dealerCards"></div>
+    <div class="cards-container" id="playerCards"></div>
     </div>
     <div class="bottom-ui">
-      <div class="info-panel">
-        <div class="info-item"><div class="info-label">BALANCE</div><div class="info-value" id="balance">1000</div></div>
-        <div class="info-item"><div class="info-label">BET</div><div class="info-value" id="bet">10</div></div>
-      </div>
-      <div class="controls">
-        <div class="bet-controls"><button id="betMinus">-</button><button id="betPlus">+</button></div>
-        <button id="dealButton">DEAL</button>
-        <button id="hitButton" disabled>HIT</button>
-        <button id="standButton" disabled>STAND</button>
-      </div>
+    <div class="info-panel">
+    <div class="info-item"><div class="info-label">BALANCE</div><div class="info-value" id="balance">1000</div></div>
+    <div class="info-item"><div class="info-label">BET</div><div class="info-value" id="bet">10</div></div>
+    </div>
+    <div class="controls">
+    <div class="bet-controls"><button id="betMinus">-</button><button id="betPlus">+</button></div>
+    <button id="dealButton">DEAL</button>
+    <button id="hitButton" disabled>HIT</button>
+    <button id="standButton" disabled>STAND</button>
+    </div>
     </div>
   </div>
 
@@ -168,6 +168,34 @@ function playWinSound(){ const o=audioCtx.createOscillator(), g=audioCtx.createG
 function playLoseSound(){ const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.type='sawtooth'; o.frequency.setValueAtTime(300,audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(100,audioCtx.currentTime+0.3); g.gain.setValueAtTime(0.2,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.3); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime+0.3);} 
 function playButtonSound(){ const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.value=800; o.type='square'; g.gain.setValueAtTime(0.1,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.05); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime+0.05);} 
 function playChipSound(){ const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.value=1000; o.type='sine'; g.gain.setValueAtTime(0.2,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.08); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime+0.08);} 
+
+// ---- External SFX (uploaded files) ----
+const sfxBackPath = 'fx1.mp3';
+const sfxWinPaths = ['fx4.mp3', 'fx5.mp3', 'fx6.mp3', 'fx7.mp3'];
+
+function isSfxMuted(){
+  return localStorage.getItem('casinoMusicMuted') === 'true';
+}
+
+function playSfxFile(path, volume = 1.0){
+  if(isSfxMuted()) return;
+  try{
+    const s = new Audio(path);
+    s.volume = Math.max(0, Math.min(1, volume));
+    s.play().catch(err=>{ console.log('SFX play failed:', err); });
+  }catch(e){ console.log('SFX error', e); }
+}
+
+function playRandomWinSfx(){
+  const i = Math.floor(Math.random()*sfxWinPaths.length);
+  playSfxFile(sfxWinPaths[i], 0.9);
+}
+
+function playBackAndClose(){
+  playSfxFile(sfxBackPath, 0.9);
+  setTimeout(()=>{ parent.postMessage('closeGame', '*'); }, 150);
+}
+
 
 const suits=['♠','♥','♦','♣']; const values=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
 let deck=[], playerHand=[], dealerHand=[], balance=1000, bet=10, gameState='betting';
@@ -190,7 +218,7 @@ betMinus.addEventListener('click',()=>{ if(gameState==='betting' && bet>10){ bet
 betPlus.addEventListener('click',()=>{ if(gameState==='betting' && bet<balance){ bet+=10; betEl.textContent=bet; playChipSound(); } });
 dealButton.addEventListener('click',()=>{ if(gameState==='betting'){ startRound(); } }); hitButton.addEventListener('click',()=>{ playerHit(); }); standButton.addEventListener('click',()=>{ playerStand(); }); updateUI();
 
-/* ========== MUSIC & NAVIGATION ==========
+/* ==== MUSIC & NAVIGATION ====
 let currentGameAudio = null;
 let lobbyAudioForBack = null;
 
@@ -233,13 +261,13 @@ function toggleMute() {
     
     // When song ends, restart it
     currentGameAudio.addEventListener('ended', () => {
-      currentGameAudio.currentTime = 0;
-      currentGameAudio.play();
+    currentGameAudio.currentTime = 0;
+    currentGameAudio.play();
     });
     
     // Start playing automatically when page loads
     setTimeout(() => {
-      currentGameAudio.play().catch(err => console.log('Audio play failed:', err));
+    currentGameAudio.play().catch(err => console.log('Audio play failed:', err));
     }, 100);
   }
 })();*/
