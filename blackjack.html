@@ -9,7 +9,7 @@
 <style>
    .corner-btn {
   position: fixed;
-  left: 1rem;    /* etäisyys vasemmasta reunasta */
+  left: 1rem;      /* etäisyys vasemmasta reunasta */
   bottom: 1rem;    /* etäisyys alareunasta */
   padding: 0.75rem 1.25rem;
   font-size: 1rem;
@@ -64,7 +64,7 @@
   }
   @media (min-width: 769px) and (min-height: 1345px) {
     html, body {
-    background-size: 768px 1344px;
+      background-size: 768px 1344px;
     }
   }
 
@@ -138,25 +138,25 @@
 </style>
 </head>
 <body>
-<button class="corner-btn" onclick="parent.postMessage('closeGame', '*')">←</button>
+<button class="corner-btn" onclick="window.history.back()">←</button>
 <button class="mute-btn" id="muteBtn" onclick="toggleMute()">🔊</button>
   <div class="game-container">
     <div class="message" id="message">Place your bet and press DEAL!</div>
     <div class="cards-area">
-    <div class="cards-container" id="dealerCards"></div>
-    <div class="cards-container" id="playerCards"></div>
+      <div class="cards-container" id="dealerCards"></div>
+      <div class="cards-container" id="playerCards"></div>
     </div>
     <div class="bottom-ui">
-    <div class="info-panel">
-    <div class="info-item"><div class="info-label">BALANCE</div><div class="info-value" id="balance">1000</div></div>
-    <div class="info-item"><div class="info-label">BET</div><div class="info-value" id="bet">10</div></div>
-    </div>
-    <div class="controls">
-    <div class="bet-controls"><button id="betMinus">-</button><button id="betPlus">+</button></div>
-    <button id="dealButton">DEAL</button>
-    <button id="hitButton" disabled>HIT</button>
-    <button id="standButton" disabled>STAND</button>
-    </div>
+      <div class="info-panel">
+        <div class="info-item"><div class="info-label">BALANCE</div><div class="info-value" id="balance">1000</div></div>
+        <div class="info-item"><div class="info-label">BET</div><div class="info-value" id="bet">10</div></div>
+      </div>
+      <div class="controls">
+        <div class="bet-controls"><button id="betMinus">-</button><button id="betPlus">+</button></div>
+        <button id="dealButton">DEAL</button>
+        <button id="hitButton" disabled>HIT</button>
+        <button id="standButton" disabled>STAND</button>
+      </div>
     </div>
   </div>
 
@@ -184,13 +184,13 @@ function startRound(){ if(bet>balance){ messageEl.textContent='Not enough balanc
 function playerHit(){ if(gameState!=='playerTurn') return; playButtonSound(); playerHand.push(deck.pop()); playCardSound(); updateUI(); const pv=calculateHandValue(playerHand); if(pv>21) endRound('Bust! You lose.'); }
 function playerStand(){ if(gameState!=='playerTurn') return; playButtonSound(); gameState='dealerTurn'; messageEl.textContent='Dealer is playing...'; hitButton.disabled=true; standButton.disabled=true; dealerPlay(); }
 function dealerPlay(){ updateUI(); let cardsToAdd=[]; let dv=calculateHandValue(dealerHand); while(dv<17){ const nc=deck.pop(); cardsToAdd.push(nc); dealerHand.push(nc); dv=calculateHandValue(dealerHand); } for(let i=0;i<cardsToAdd.length;i++){ dealerHand.pop(); } let delay=0; cardsToAdd.forEach((card,index)=>{ setTimeout(()=>{ dealerHand.push(card); playCardSound(); updateUI(); if(index===cardsToAdd.length-1){ setTimeout(()=>{ determineWinner(); },500); } }, delay); delay+=500; }); if(cardsToAdd.length===0){ setTimeout(()=>{ determineWinner(); },500); } }
-function determineWinner(){ const pv=calculateHandValue(playerHand); const dv=calculateHandValue(dealerHand); if(dv>21 || pv>dv){ balance+=bet*2; playRandomWinSfx(); endRound('You win!'); } else if(pv===dv){ balance+=bet; playButtonSound(); endRound('Push. It\'s a tie.'); } else { playLoseSound(); endRound('Dealer wins. You lose.'); } }
+function determineWinner(){ const pv=calculateHandValue(playerHand); const dv=calculateHandValue(dealerHand); if(dv>21 || pv>dv){ balance+=bet*2; playWinSound(); endRound('You win!'); } else if(pv===dv){ balance+=bet; playButtonSound(); endRound('Push. It\'s a tie.'); } else { playLoseSound(); endRound('Dealer wins. You lose.'); } }
 function endRound(message){ gameState='betting'; messageEl.textContent=message; dealButton.disabled=false; hitButton.disabled=true; standButton.disabled=true; betMinus.disabled=false; betPlus.disabled=false; updateUI(); }
 betMinus.addEventListener('click',()=>{ if(gameState==='betting' && bet>10){ bet-=10; betEl.textContent=bet; playChipSound(); } });
 betPlus.addEventListener('click',()=>{ if(gameState==='betting' && bet<balance){ bet+=10; betEl.textContent=bet; playChipSound(); } });
 dealButton.addEventListener('click',()=>{ if(gameState==='betting'){ startRound(); } }); hitButton.addEventListener('click',()=>{ playerHit(); }); standButton.addEventListener('click',()=>{ playerStand(); }); updateUI();
 
-/* ==== MUSIC & NAVIGATION ====
+/* ========== MUSIC & NAVIGATION ==========
 let currentGameAudio = null;
 let lobbyAudioForBack = null;
 
@@ -233,13 +233,13 @@ function toggleMute() {
     
     // When song ends, restart it
     currentGameAudio.addEventListener('ended', () => {
-    currentGameAudio.currentTime = 0;
-    currentGameAudio.play();
+      currentGameAudio.currentTime = 0;
+      currentGameAudio.play();
     });
     
     // Start playing automatically when page loads
     setTimeout(() => {
-    currentGameAudio.play().catch(err => console.log('Audio play failed:', err));
+      currentGameAudio.play().catch(err => console.log('Audio play failed:', err));
     }, 100);
   }
 })();*/
