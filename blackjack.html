@@ -9,8 +9,8 @@
 <style>
    .corner-btn {
   position: fixed;
-  left: 1rem;      /* etäisyys vasemmasta reunasta */
-  bottom: 1rem;    /* etäisyys alareunasta */
+  left: 1rem;
+  bottom: 1rem;
   padding: 0.75rem 1.25rem;
   font-size: 1rem;
   border: none;
@@ -42,7 +42,6 @@
   justify-content: center;
 }
 
-/* Responsiivisesti pienempi mobiilissa */
 @media (max-width: 600px) {
   .corner-btn {
     font-size: 0.9rem;
@@ -64,7 +63,7 @@
   }
   @media (min-width: 769px) and (min-height: 1345px) {
     html, body {
-      background-size: 768px 1344px;
+    background-size: 768px 1344px;
     }
   }
 
@@ -138,25 +137,25 @@
 </style>
 </head>
 <body>
-<button class="corner-btn" onclick="window.history.back()">←</button>
+<button class="corner-btn" onclick="goBackToLobby()">←</button>
 <button class="mute-btn" id="muteBtn" onclick="toggleMute()">🔊</button>
   <div class="game-container">
     <div class="message" id="message">Place your bet and press DEAL!</div>
     <div class="cards-area">
-      <div class="cards-container" id="dealerCards"></div>
-      <div class="cards-container" id="playerCards"></div>
+    <div class="cards-container" id="dealerCards"></div>
+    <div class="cards-container" id="playerCards"></div>
     </div>
     <div class="bottom-ui">
-      <div class="info-panel">
-        <div class="info-item"><div class="info-label">BALANCE</div><div class="info-value" id="balance">1000</div></div>
-        <div class="info-item"><div class="info-label">BET</div><div class="info-value" id="bet">10</div></div>
-      </div>
-      <div class="controls">
-        <div class="bet-controls"><button id="betMinus">-</button><button id="betPlus">+</button></div>
-        <button id="dealButton">DEAL</button>
-        <button id="hitButton" disabled>HIT</button>
-        <button id="standButton" disabled>STAND</button>
-      </div>
+    <div class="info-panel">
+    <div class="info-item"><div class="info-label">BALANCE</div><div class="info-value" id="balance">1000</div></div>
+    <div class="info-item"><div class="info-label">BET</div><div class="info-value" id="bet">10</div></div>
+    </div>
+    <div class="controls">
+    <div class="bet-controls"><button id="betMinus">-</button><button id="betPlus">+</button></div>
+    <button id="dealButton">DEAL</button>
+    <button id="hitButton" disabled>HIT</button>
+    <button id="standButton" disabled>STAND</button>
+    </div>
     </div>
   </div>
 
@@ -164,7 +163,12 @@
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 const audioCtx = new AudioContext();
 function playCardSound(){ const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.value=400; o.type='sine'; g.gain.setValueAtTime(0.3,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.1); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime+0.1);} 
-function playWinSound(){ const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.type='sine'; o.frequency.setValueAtTime(523,audioCtx.currentTime); o.frequency.setValueAtTime(659,audioCtx.currentTime+0.1); o.frequency.setValueAtTime(784,audioCtx.currentTime+0.2); g.gain.setValueAtTime(0.3,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.4); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime+0.4);} 
+function playWinSound(){ 
+  // Call parent window's random win sound
+  if (window.parent && window.parent.playWinSound) {
+    window.parent.playWinSound();
+  }
+} 
 function playLoseSound(){ const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.type='sawtooth'; o.frequency.setValueAtTime(300,audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(100,audioCtx.currentTime+0.3); g.gain.setValueAtTime(0.2,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.3); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime+0.3);} 
 function playButtonSound(){ const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.value=800; o.type='square'; g.gain.setValueAtTime(0.1,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.05); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime+0.05);} 
 function playChipSound(){ const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.value=1000; o.type='sine'; g.gain.setValueAtTime(0.2,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.08); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime+0.08);} 
@@ -190,59 +194,14 @@ betMinus.addEventListener('click',()=>{ if(gameState==='betting' && bet>10){ bet
 betPlus.addEventListener('click',()=>{ if(gameState==='betting' && bet<balance){ bet+=10; betEl.textContent=bet; playChipSound(); } });
 dealButton.addEventListener('click',()=>{ if(gameState==='betting'){ startRound(); } }); hitButton.addEventListener('click',()=>{ playerHit(); }); standButton.addEventListener('click',()=>{ playerStand(); }); updateUI();
 
-/* ========== MUSIC & NAVIGATION ==========
-let currentGameAudio = null;
-let lobbyAudioForBack = null;
-
 function goBackToLobby() {
- 
-  // Navigate to lobby
-  setTimeout(() => {
-    window.location.href = 'index.html';
-  }, 100);
+  // Send message to parent to close game overlay
+  parent.postMessage('closeGame', '*');
 }
 
 function toggleMute() {
-  const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
-  const newMutedState = !isMuted;
-  localStorage.setItem('casinoMusicMuted', newMutedState);
-  
-  const muteBtn = document.getElementById('muteBtn');
-  muteBtn.textContent = newMutedState ? '🔇' : '🔊';
-  
-  if (currentGameAudio) {
-    currentGameAudio.volume = newMutedState ? 0 : 0.7;
-  }
+  // Mute functionality handled by parent
 }
-
-(function(){
-  'use strict';
-  
-  // Get the music track for this game from localStorage
-  const gameMusic = localStorage.getItem('casinoGameMusic');
-  const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
-  
-  // Update mute button
-  const muteBtn = document.getElementById('muteBtn');
-  muteBtn.textContent = isMuted ? '🔇' : '🔊';
-  
-  if (gameMusic) {
-    currentGameAudio = new Audio(gameMusic);
-    currentGameAudio.loop = false;
-    currentGameAudio.volume = isMuted ? 0 : 0.7;
-    
-    // When song ends, restart it
-    currentGameAudio.addEventListener('ended', () => {
-      currentGameAudio.currentTime = 0;
-      currentGameAudio.play();
-    });
-    
-    // Start playing automatically when page loads
-    setTimeout(() => {
-      currentGameAudio.play().catch(err => console.log('Audio play failed:', err));
-    }, 100);
-  }
-})();*/
 </script>
 </body>
 </html>

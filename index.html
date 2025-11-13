@@ -17,44 +17,44 @@
     .start-overlay button { background: #ffd56b; border: none; border-radius: 12px; padding: 16px 18px; color: #3a2b10; font: 800 16px/1 system-ui, sans-serif; cursor: pointer; }
 
     .quit-btn {
-      position: fixed;
-      left: 1rem;
-      bottom: 1rem;
-      padding: 0.75rem 1.25rem;
-      font-size: 1rem;
-      border: none;
-      border-radius: 20rem;
-      background-color: rgba(255, 77, 77, 0.9);
-      color: rgb(255, 255, 255);
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-      z-index: 1000;
-      font-weight: bold;
+    position: fixed;
+    left: 1rem;
+    bottom: 1rem;
+    padding: 0.75rem 1.25rem;
+    font-size: 1rem;
+    border: none;
+    border-radius: 20rem;
+    background-color: rgba(255, 77, 77, 0.9);
+    color: rgb(255, 255, 255);
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    z-index: 1000;
+    font-weight: bold;
     }
 
     .mute-btn {
-      position: fixed;
-      right: 1rem;
-      bottom: 1rem;
-      padding: 0.75rem;
-      font-size: 1.2rem;
-      border: none;
-      border-radius: 50%;
-      background-color: rgba(255, 215, 0, 0.9);
-      color: rgb(0, 0, 0);
-      cursor: button;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-      z-index: 1000;
-      width: 50px;
-      height: 50px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    padding: 0.75rem;
+    font-size: 1.2rem;
+    border: none;
+    border-radius: 50%;
+    background-color: rgba(255, 215, 0, 0.9);
+    color: rgb(0, 0, 0);
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    z-index: 1000;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     }
 
     @media (max-width: 600px) {
-      .quit-btn { font-size: 0.9rem; padding: 0.6rem 1rem; left: 0.75rem; bottom: 1rem; }
-      .mute-btn { width: 45px; height: 45px; font-size: 1rem; }
+    .quit-btn { font-size: 0.9rem; padding: 0.6rem 1rem; left: 0.75rem; bottom: 1rem; }
+    .mute-btn { width: 45px; height: 45px; font-size: 1rem; }
     }
   </style>
 </head>
@@ -68,7 +68,7 @@
   </div>
 
   <button id="quitBtn" class="quit-btn" style="display:none;">Quit</button>
-  <button id="muteBtn" class="mute-btn" style="display:none;">🔊</button>
+  <button id="muteBtn" class="mute-btn" style="display:none;">🔈</button>
 
 <script>
 (function(){
@@ -76,18 +76,24 @@
  const ASSETS = {
    background: 'https://cdn.abacus.ai/images/ba393218-5d4c-4d90-a7e1-64870ec7fbfc.png',
    pages: {
-     blackjack: 'blackjack.html',
-     poker: 'poker.html',
-     slots: 'slotmachine.html',
-     solitaire: 'solitaire.html'
+    blackjack: 'blackjack.html',
+    poker: 'poker.html',
+    slots: 'slotmachine.html',
+    solitaire: 'solitaire.html'
    },
+   // lobby track list (will be shuffled)
    music: {
-     lobby: ['07 - Imagooo feat. Kimmovuohenkasvattamakoira (Remix) (1).mp3', 'Dollarit dub.mp3', 'Sivistynyt dub.mp3',
-     'Terve dub.mp3',
-     'Dollarit dub.mp3',
-     '10 - (Pelastakaa) Koisotie (Remix).mp3'],
-     
-   }
+    lobby: ['07 - Imagooo feat. Kimmovuohenkasvattamakoira (Remix) (1).mp3', 'Dollarit dub.mp3', 'Sivistynyt dub.mp3',
+    'Terve dub.mp3',
+    'Dollarit dub.mp3',
+    '10 - (Pelastakaa) Koisotie (Remix).mp3']
+   },
+   // sound effect to play when selecting any game (does not stop music)
+   gameSelectSfx: 'fx3.mp3',
+   // NEW: back button sound effect
+   backButtonSfx: 'fx1.mp3',
+   // NEW: win sound effects (played randomly)
+   winSfx: ['fx4.mp3', 'fx5.mp3', 'fx6.mp3', 'fx7.mp3']
  };
 
  // disable some gestures at root
@@ -120,236 +126,260 @@
    { id: 'solitaire', label: 'Solitaire', x: world.width/2 - 170, y: world.height - 270, w: 340, h: 170 }
  ];
 
- let currentAudio = null;
- let lobbyTrackIndex = 0;
+ // --- Audio state ---
+ let musicAudio = null;    // Audio object for lobby music
+ let playlist = [];    // shuffled queue of tracks
+ let isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
 
- function playMusic(trackOrTracks) {
-   if (currentAudio) {
-     try { currentAudio.pause(); } catch(e) {}
-     currentAudio = null;
+ function shuffleArray(arr) {
+   const a = arr.slice();
+   for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+   }
+   return a;
+ }
+
+ function initPlaylist() {
+   // create a fresh shuffled playlist so first song is random and order is randomized
+   playlist = shuffleArray(ASSETS.music.lobby.filter(Boolean));
+ }
+
+ function playNextTrack() {
+   if (musicAudio) {
+    try { musicAudio.removeEventListener('ended', playNextTrack); } catch(e){}
+    try { musicAudio.pause(); } catch(e){}
+    musicAudio = null;
    }
 
-   let track;
-   if (Array.isArray(trackOrTracks)) {
-     track = trackOrTracks[lobbyTrackIndex % trackOrTracks.length];
-   } else {
-     track = trackOrTracks;
-   }
+   if (playlist.length === 0) initPlaylist();
+   const next = playlist.shift();
+   if (!next) return;
 
-   const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
-   currentAudio = new Audio(track);
-   currentAudio.loop = false;
-   currentAudio.volume = isMuted ? 0 : 0.7;
-
-   currentAudio.addEventListener('ended', () => {
-     if (Array.isArray(trackOrTracks)) {
-       lobbyTrackIndex++;
-       playMusic(trackOrTracks);
-     } else {
-       currentAudio.currentTime = 0;
-       currentAudio.play();
-     }
+   musicAudio = new Audio(next);
+   musicAudio.loop = false;
+   musicAudio.volume = isMuted ? 0 : 0.7;
+   musicAudio.addEventListener('ended', () => {
+    // play tracks forever by playing next in the shuffled queue
+    setTimeout(playNextTrack, 30);
    });
+   musicAudio.play().catch(err => console.warn('Music play failed:', err));
+ }
 
-   currentAudio.play().catch(err => console.log('Audio play failed:', err));
-}
+ function startBackgroundMusic() {
+   if (!playlist || playlist.length === 0) initPlaylist();
+   if (!musicAudio) playNextTrack();
+ }
 
-// --- game overlay iframe to load games in-page (keeps lobby music playing)
-let gameOverlay = null;
-function openGameOverlay(url) {
-  if (gameOverlay) {
-    // reuse existing overlay if already open
+ // play the game-select SFX without stopping music
+ function playGameSelectSfx() {
+   try {
+    const fx = new Audio(ASSETS.gameSelectSfx);
+    fx.loop = false;
+    fx.volume = isMuted ? 0 : 0.85;
+    fx.play().catch(err => console.warn('SFX play failed:', err));
+   } catch(e) { console.warn('SFX error', e); }
+ }
+
+ // NEW: play back button sound effect
+ function playBackButtonSfx() {
+   try {
+    const fx = new Audio(ASSETS.backButtonSfx);
+    fx.loop = false;
+    fx.volume = isMuted ? 0 : 0.85;
+    fx.play().catch(err => console.warn('Back SFX play failed:', err));
+   } catch(e) { console.warn('Back SFX error', e); }
+ }
+
+ // NEW: play random win sound effect
+ function playWinSfx() {
+   try {
+    const randomWinSfx = ASSETS.winSfx[Math.floor(Math.random() * ASSETS.winSfx.length)];
+    const fx = new Audio(randomWinSfx);
+    fx.loop = false;
+    fx.volume = isMuted ? 0 : 0.85;
+    fx.play().catch(err => console.warn('Win SFX play failed:', err));
+   } catch(e) { console.warn('Win SFX error', e); }
+ }
+
+ // Expose win sound function globally so games can call it
+ window.playWinSound = playWinSfx;
+
+ // --- game overlay iframe to load games in-page (keeps lobby music playing)
+ let gameOverlay = null;
+ function openGameOverlay(url) {
+   if (gameOverlay) {
     gameOverlay.src = url;
     return;
-  }
-  gameOverlay = document.createElement('iframe');
-  gameOverlay.id = 'gameOverlay';
-  Object.assign(gameOverlay.style, {
+   }
+   gameOverlay = document.createElement('iframe');
+   gameOverlay.id = 'gameOverlay';
+   Object.assign(gameOverlay.style, {
     position: 'fixed', top: '0', left: '0', width: '100%', height: '100%', border: '0', zIndex: 2000, background: '#000'
-  });
-  gameOverlay.src = url;
-  gameOverlay.setAttribute('allowfullscreen', '');
-  document.body.appendChild(gameOverlay);
-  // change quit button to act as overlay closer
-  if (quitBtn) { quitBtn.textContent = 'Close'; quitBtn.dataset.overlayOpen = 'true'; quitBtn.style.display = 'block'; }
-}
-function closeGameOverlay() {
-  if (!gameOverlay) return;
-  try { gameOverlay.src = 'about:blank'; } catch(e){}
-  document.body.removeChild(gameOverlay);
-  gameOverlay = null;
-  if (quitBtn) { quitBtn.textContent = 'Quit'; delete quitBtn.dataset.overlayOpen; }
-}
+   });
+   gameOverlay.src = url;
+   gameOverlay.setAttribute('allowfullscreen', '');
+   document.body.appendChild(gameOverlay);
+   if (quitBtn) { quitBtn.textContent = 'Close'; quitBtn.dataset.overlayOpen = 'true'; quitBtn.style.display = 'block'; }
+ }
+ function closeGameOverlay() {
+   if (!gameOverlay) return;
+   // NEW: Play back button sound when closing game
+   playBackButtonSfx();
+   try { gameOverlay.src = 'about:blank'; } catch(e){}
+   document.body.removeChild(gameOverlay);
+   gameOverlay = null;
+   if (quitBtn) { quitBtn.textContent = 'Quit'; delete quitBtn.dataset.overlayOpen; }
+ }
 
-window.addEventListener('message', (e) => {
-  if (e.data === 'closeGame') closeGameOverlay();
-});
+ window.addEventListener('message', (e) => {
+   if (e.data === 'closeGame') closeGameOverlay();
+ });
 
-function worldPointFromClient(x, y){
-  const rect = canvas.getBoundingClientRect();
-  const clickX = x - rect.left;
-  const clickY = y - rect.top;
-  const vp = getViewport();
-  const worldX = (clickX - vp.offX) / vp.scale;
-  const worldY = (clickY - vp.offY) / vp.scale;
-  return { worldX, worldY };
-}
+ function worldPointFromClient(x, y){
+   const rect = canvas.getBoundingClientRect();
+   const clickX = x - rect.left;
+   const clickY = y - rect.top;
+   const vp = getViewport();
+   const worldX = (clickX - vp.offX) / vp.scale;
+   const worldY = (clickY - vp.offY) / vp.scale;
+   return { worldX, worldY };
+ }
 
-// ----------------- GAME SELECT (lobby) -----------------
-// Start the selected game's music inside this user gesture before navigating.
-canvas.addEventListener('click', (e) => {
-  if (!started) return;
-  const { worldX, worldY } = worldPointFromClient(e.clientX, e.clientY);
-  const clickedZone = zones.find(z => worldX >= z.x && worldX <= z.x + z.w && worldY >= z.y && worldY <= z.y + z.h);
-  if (clickedZone) {
-    //const gameMusic = ASSETS.music[clickedZone.id];
+ // ---- GAME SELECT (lobby) ----
+ // Play fx3.mp3 when selecting any game (does not stop music)
+ canvas.addEventListener('click', (e) => {
+   if (!started) return;
+   const { worldX, worldY } = worldPointFromClient(e.clientX, e.clientY);
+   const clickedZone = zones.find(z => worldX >= z.x && worldX <= z.x + z.w && worldY >= z.y && worldY <= z.y + z.h);
+   if (clickedZone) {
     const url = ASSETS.pages[clickedZone.id];
 
-    /*if (gameMusic) {
-      if (currentAudio) { try { currentAudio.pause(); } catch(e){} currentAudio = null; }
-      currentAudio = new Audio(gameMusic);
-      currentAudio.loop = true;
-      const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
-      currentAudio.volume = isMuted ? 0 : 0.7;
-      currentAudio.play().catch(err => console.warn('Game audio start failed:', err));
-      localStorage.setItem('casinoGameMusic', gameMusic);
-    }*/
+    // play fx3.mp3 (does NOT stop or replace the lobby music)
+    playGameSelectSfx();
 
     if (url) setTimeout(() => { openGameOverlay(url); }, 180);
-  }
-});
+   }
+ });
 
-canvas.addEventListener('touchstart', (e) => {
-  if (e.target !== canvas || !started) return;
-  e.preventDefault();
-  const t = e.touches[0];
-  const { worldX, worldY } = worldPointFromClient(t.clientX, t.clientY);
-  const clickedZone = zones.find(z => worldX >= z.x && worldX <= z.x + z.w && worldY >= z.y && worldY <= z.y + z.h);
-  if (clickedZone) {
-    //const gameMusic = ASSETS.music[clickedZone.id];
+ canvas.addEventListener('touchstart', (e) => {
+   if (e.target !== canvas || !started) return;
+   e.preventDefault();
+   const t = e.touches[0];
+   const { worldX, worldY } = worldPointFromClient(t.clientX, t.clientY);
+   const clickedZone = zones.find(z => worldX >= z.x && worldX <= z.x + z.w && worldY >= z.y && worldY <= z.y + z.h);
+   if (clickedZone) {
     const url = ASSETS.pages[clickedZone.id];
-
-   /* if (gameMusic) {
-      if (currentAudio) { try { currentAudio.pause(); } catch(e){} currentAudio = null; }
-      currentAudio = new Audio(gameMusic);
-      currentAudio.loop = true;
-      const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
-      currentAudio.volume = isMuted ? 0 : 0.7;
-      currentAudio.play().catch(err => console.warn('Game audio start failed:', err));
-      localStorage.setItem('casinoGameMusic', gameMusic);
-    }*/
-
+    playGameSelectSfx();
     if (url) setTimeout(() => { openGameOverlay(url); }, 180);
-  }
-});
+   }
+ }, { passive:false });
 
-const startOverlay = document.getElementById('startOverlay');
-const startBtn = document.getElementById('startBtn');
-const quitBtn = document.getElementById('quitBtn');
-const muteBtn = document.getElementById('muteBtn');
-let started = false;
+ const startOverlay = document.getElementById('startOverlay');
+ const startBtn = document.getElementById('startBtn');
+ const quitBtn = document.getElementById('quitBtn');
+ const muteBtn = document.getElementById('muteBtn');
+ let started = false;
 
-// Initialize mute button state
-const initiallyMuted = localStorage.getItem('casinoMusicMuted') === 'true';
-if (muteBtn) {
-  muteBtn.textContent = initiallyMuted ? '🔇' : '🔊';
-  // click + touch
-  muteBtn.addEventListener('click', toggleMute);
-  muteBtn.addEventListener('touchstart', function(e){ e.preventDefault(); toggleMute(); }, { passive: false });
-}
+ // Initialize mute button state
+ if (muteBtn) {
+   muteBtn.textContent = isMuted ? '🔇' : '🔈';
+   // click + touch
+   muteBtn.addEventListener('click', toggleMute);
+   muteBtn.addEventListener('touchstart', function(e){ e.preventDefault(); toggleMute(); }, { passive: false });
+ }
 
-startBtn.addEventListener('click', () => {
-  started = true;
-  startOverlay.style.display = 'none';
-  quitBtn.style.display = 'block';
-  muteBtn.style.display = 'flex';
-  playMusic(ASSETS.music.lobby);
-});
+ startBtn.addEventListener('click', () => {
+   started = true;
+   startOverlay.style.display = 'none';
+   quitBtn.style.display = 'block';
+   muteBtn.style.display = 'flex';
+   // start shuffled lobby music (first track random)
+   initPlaylist();
+   startBackgroundMusic();
+ });
 
-function quitToStart() {
-  // If a game overlay is open, close it instead of navigating away
-  if (gameOverlay) { closeGameOverlay(); return; }
-  // Stop any playing audio and show start overlay (index should show overlay by default)
-  if (currentAudio) { try { currentAudio.pause(); } catch(e){} currentAudio = null; }
-  localStorage.removeItem('casinoGameMusic');
-  setTimeout(() => { window.location.href = 'index.html'; }, 80);
-}
+ function quitToStart() {
+   // If a game overlay is open, close it instead of navigating away
+   if (gameOverlay) { closeGameOverlay(); return; }
+   // Stop any playing audio and show start overlay (index should show overlay by default)
+   if (musicAudio) { try { musicAudio.pause(); } catch(e){} musicAudio = null; }
+   localStorage.removeItem('casinoGameMusic');
+   setTimeout(() => { window.location.href = 'index.html'; }, 80);
+ }
 
-function toggleMute() {
-  const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
-  const newMutedState = !isMuted;
-  localStorage.setItem('casinoMusicMuted', newMutedState);
+ function toggleMute() {
+   isMuted = !isMuted;
+   localStorage.setItem('casinoMusicMuted', isMuted ? 'true' : 'false');
 
-  const mBtn = document.getElementById('muteBtn');
-  if (mBtn) mBtn.textContent = newMutedState ? '🔇' : '🔊';
+   const mBtn = document.getElementById('muteBtn');
+   if (mBtn) mBtn.textContent = isMuted ? '🔇' : '🔈';
 
-  if (currentAudio) currentAudio.volume = newMutedState ? 0 : 0.7;
-}
+   if (musicAudio) musicAudio.volume = isMuted ? 0 : 0.7;
+ }
 
-quitBtn.addEventListener('click', quitToStart);
+ quitBtn.addEventListener('click', quitToStart);
 
-// Background image for canvas rendering
-const bgImg = new Image();
-bgImg.crossOrigin = 'anonymous';
-bgImg.onerror = () => console.log('bg load error — gradient fallback');
-bgImg.src = ASSETS.background;
+ // Background image for canvas rendering
+ const bgImg = new Image();
+ bgImg.crossOrigin = 'anonymous';
+ bgImg.onerror = () => console.log('bg load error — gradient fallback');
+ bgImg.src = ASSETS.background;
 
-function getViewport() {
-  const vw = canvas.width / (window.devicePixelRatio || 1);
-  const vh = canvas.height / (window.devicePixelRatio || 1);
-  const scale = Math.min(vw / world.width, vh / world.height);
-  const viewW = world.width * scale;
-  const viewH = world.height * scale;
-  const offX = (vw - viewW) / 2;
-  const offY = (vh - viewH) / 2;
-  return { scale, offX, offY, vw, vh, viewW, viewH };
-}
+ function getViewport() {
+   const vw = canvas.width / (window.devicePixelRatio || 1);
+   const vh = canvas.height / (window.devicePixelRatio || 1);
+   const scale = Math.min(vw / world.width, vh / world.height);
+   const viewW = world.width * scale;
+   const viewH = world.height * scale;
+   const offX = (vw - viewW) / 2;
+   const offY = (vh - viewH) / 2;
+   return { scale, offX, offY, vw, vh, viewW, viewH };
+ }
 
-function drawBackground(vp) {
-  if (bgImg.complete && bgImg.naturalWidth > 0) {
+ function drawBackground(vp) {
+   if (bgImg.complete && bgImg.naturalWidth > 0) {
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(bgImg, vp.offX, vp.offY, vp.viewW, vp.viewH);
-  } else {
+   } else {
     const g = ctx.createLinearGradient(0,0,0,canvas.height);
     g.addColorStop(0, '#2b1730');
     g.addColorStop(1, '#1a0f1a');
     ctx.fillStyle = g;
     ctx.fillRect(0,0,canvas.width, canvas.height);
-  }
-}
+   }
+ }
 
-function render(dt) {
-  const vp = getViewport();
-  ctx.clearRect(0,0,canvas.width, canvas.height);
-  drawBackground(vp);
+ function render(dt) {
+   const vp = getViewport();
+   ctx.clearRect(0,0,canvas.width, canvas.height);
+   drawBackground(vp);
 
-  // subtle zone outlines intentionally left out (no glow)
-  ctx.save();
-  ctx.globalAlpha = 0.05;
-  ctx.fillStyle = '#000';
-  zones.forEach(z => {
+   // subtle zone outlines intentionally left out (no glow)
+   ctx.save();
+   ctx.globalAlpha = 0.05;
+   ctx.fillStyle = '#000';
+   zones.forEach(z => {
     const x = vp.offX + z.x * vp.scale;
     const y = vp.offY + z.y * vp.scale;
     const w = z.w * vp.scale;
     const h = z.h * vp.scale;
-    // optional: faint stroke to hint zones (very subtle)
     ctx.strokeStyle = 'rgba(255,215,0,0.03)';
     ctx.lineWidth = 2;
     ctx.strokeRect(x, y, w, h);
-  });
-  ctx.restore();
-}
+   });
+   ctx.restore();
+ }
 
-let last = performance.now();
-function loop(now) {
-  const dt = Math.min(48, now - last); last = now;
-  if (started) { render(dt); }
-  requestAnimationFrame(loop);
-}
-requestAnimationFrame(loop);
+ let last = performance.now();
+ function loop(now) {
+   const dt = Math.min(48, now - last); last = now;
+   if (started) { render(dt); }
+   requestAnimationFrame(loop);
+ }
+ requestAnimationFrame(loop);
 })();
 </script>
 
 </body>
 </html>
-
