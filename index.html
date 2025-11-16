@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="screen-orientation" content="portrait" />
   <title>Dub Casino Lobby</title>
   <style>
     html, body { margin: 0; padding: 0; background: #000; height: 100%; overscroll-behavior: none; touch-action: none; }
@@ -52,9 +53,31 @@
     justify-content: center;
     }
 
+    .restart-btn {
+    position: fixed;
+    right: 1rem;
+    top: 1rem;
+    padding: 0.75rem;
+    font-size: 1.2rem;
+    border: none;
+    border-radius: 50%;
+    background-color: rgba(100, 200, 255, 0.9);
+    color: rgb(0, 0, 0);
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    z-index: 1000;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    }
+
     @media (max-width: 600px) {
     .quit-btn { font-size: 0.9rem; padding: 0.6rem 1rem; left: 0.75rem; bottom: 1rem; }
     .mute-btn { width: 45px; height: 45px; font-size: 1rem; }
+    .restart-btn { width: 45px; height: 45px; font-size: 1rem; }
     }
   </style>
 </head>
@@ -69,10 +92,17 @@
 
   <button id="quitBtn" class="quit-btn" style="display:none;">Quit</button>
   <button id="muteBtn" class="mute-btn" style="display:none;">🔈</button>
+  <button id="restartBtn" class="restart-btn" style="display:none;">🔄</button>
 
 <script>
 (function(){
  'use strict';
+ 
+ // Lock orientation to portrait
+ if (screen.orientation && screen.orientation.lock) {
+   screen.orientation.lock('portrait').catch(() => {});
+ }
+ 
  const ASSETS = {
    background: 'https://cdn.abacus.ai/images/ba393218-5d4c-4d90-a7e1-64870ec7fbfc.png',
    pages: {
@@ -91,6 +121,14 @@
    // short sound effects to play when selecting a game (do not stop music)
    sfx: ['fx1.mp3','fx3.mp3','fx4.mp3','fx5.mp3','fx6.mp3','fx7.mp3']
  };
+
+ // Haptic feedback function
+ function haptic(intensity = 'medium') {
+   if (navigator.vibrate) {
+     const patterns = { light: 10, medium: 20, heavy: 30 };
+     navigator.vibrate(patterns[intensity] || 20);
+   }
+ }
 
  // disable some gestures at root
  ['gesturestart','gesturechange','gestureend','dblclick'].forEach(t => {
@@ -123,15 +161,16 @@
  ];
 
  // --- Audio state ---
- let musicAudio = null;           // Audio object for lobby music
- let playlist = [];              // shuffled queue of tracks
+ let musicAudio = null;    // Audio object for lobby music
+ let sfxAudioList = [];    // List of currently playing SFX audio objects
+ let playlist = [];    // shuffled queue of tracks
  let isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
 
  function shuffleArray(arr) {
    const a = arr.slice();
    for (let i = a.length - 1; i > 0; i--) {
-     const j = Math.floor(Math.random() * (i + 1));
-     [a[i], a[j]] = [a[j], a[i]];
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
    }
    return a;
  }
@@ -143,9 +182,9 @@
 
  function playNextTrack() {
    if (musicAudio) {
-     try { musicAudio.removeEventListener('ended', playNextTrack); } catch(e){}
-     try { musicAudio.pause(); } catch(e){}
-     musicAudio = null;
+    try { musicAudio.removeEventListener('ended', playNextTrack); } catch(e){}
+    try { musicAudio.pause(); } catch(e){}
+    musicAudio = null;
    }
 
    if (playlist.length === 0) initPlaylist();
@@ -156,8 +195,8 @@
    musicAudio.loop = false;
    musicAudio.volume = isMuted ? 0 : 0.7;
    musicAudio.addEventListener('ended', () => {
-     // play tracks forever by playing next in the shuffled queue
-     setTimeout(playNextTrack, 30);
+    // play tracks forever by playing next in the shuffled queue
+    setTimeout(playNextTrack, 30);
    });
    musicAudio.play().catch(err => console.warn('Music play failed:', err));
  }
@@ -167,16 +206,31 @@
    if (!musicAudio) playNextTrack();
  }
 
+ function restartCurrentSong() {
+   haptic('medium');
+   if (musicAudio) {
+     musicAudio.currentTime = 0;
+     if (musicAudio.paused) {
+       musicAudio.play().catch(err => console.warn('Restart play failed:', err));
+     }
+   }
+ }
+
  // play a short, one-shot SFX without stopping music
  function playRandomSfx() {
    try {
-     const sfxList = ASSETS.sfx.filter(Boolean);
-     if (!sfxList.length) return;
-     const pick = sfxList[Math.floor(Math.random() * sfxList.length)];
-     const fx = new Audio(pick);
-     fx.loop = false;
-     fx.volume = isMuted ? 0 : 0.85; // fx slightly louder by default
-     fx.play().catch(err => console.warn('SFX play failed:', err));
+    const sfxList = ASSETS.sfx.filter(Boolean);
+    if (!sfxList.length) return;
+    const pick = sfxList[Math.floor(Math.random() * sfxList.length)];
+    const fx = new Audio(pick);
+    fx.loop = false;
+    fx.volume = isMuted ? 0 : 1.0; // Increased volume from 0.85 to 1.0
+    sfxAudioList.push(fx);
+    fx.addEventListener('ended', () => {
+      const index = sfxAudioList.indexOf(fx);
+      if (index > -1) sfxAudioList.splice(index, 1);
+    });
+    fx.play().catch(err => console.warn('SFX play failed:', err));
    } catch(e) { console.warn('SFX error', e); }
  }
 
@@ -184,13 +238,13 @@
  let gameOverlay = null;
  function openGameOverlay(url) {
    if (gameOverlay) {
-     gameOverlay.src = url;
-     return;
+    gameOverlay.src = url;
+    return;
    }
    gameOverlay = document.createElement('iframe');
    gameOverlay.id = 'gameOverlay';
    Object.assign(gameOverlay.style, {
-     position: 'fixed', top: '0', left: '0', width: '100%', height: '100%', border: '0', zIndex: 2000, background: '#000'
+    position: 'fixed', top: '0', left: '0', width: '100%', height: '100%', border: '0', zIndex: 2000, background: '#000'
    });
    gameOverlay.src = url;
    gameOverlay.setAttribute('allowfullscreen', '');
@@ -223,28 +277,30 @@
  // Start the selected game's sound effect inside this user gesture before navigating.
  canvas.addEventListener('click', (e) => {
    if (!started) return;
+   haptic('medium');
    const { worldX, worldY } = worldPointFromClient(e.clientX, e.clientY);
    const clickedZone = zones.find(z => worldX >= z.x && worldX <= z.x + z.w && worldY >= z.y && worldY <= z.y + z.h);
    if (clickedZone) {
-     const url = ASSETS.pages[clickedZone.id];
+    const url = ASSETS.pages[clickedZone.id];
 
-     // play a random SFX (does NOT stop or replace the lobby music)
-     playRandomSfx();
+    // play a random SFX (does NOT stop or replace the lobby music)
+    playRandomSfx();
 
-     if (url) setTimeout(() => { openGameOverlay(url); }, 180);
+    if (url) setTimeout(() => { openGameOverlay(url); }, 180);
    }
  });
 
  canvas.addEventListener('touchstart', (e) => {
    if (e.target !== canvas || !started) return;
    e.preventDefault();
+   haptic('medium');
    const t = e.touches[0];
    const { worldX, worldY } = worldPointFromClient(t.clientX, t.clientY);
    const clickedZone = zones.find(z => worldX >= z.x && worldX <= z.x + z.w && worldY >= z.y && worldY <= z.y + z.h);
    if (clickedZone) {
-     const url = ASSETS.pages[clickedZone.id];
-     playRandomSfx();
-     if (url) setTimeout(() => { openGameOverlay(url); }, 180);
+    const url = ASSETS.pages[clickedZone.id];
+    playRandomSfx();
+    if (url) setTimeout(() => { openGameOverlay(url); }, 180);
    }
  }, { passive:false });
 
@@ -252,27 +308,65 @@
  const startBtn = document.getElementById('startBtn');
  const quitBtn = document.getElementById('quitBtn');
  const muteBtn = document.getElementById('muteBtn');
+ const restartBtn = document.getElementById('restartBtn');
  let started = false;
 
  // Initialize mute button state
  if (muteBtn) {
    muteBtn.textContent = isMuted ? '🔇' : '🔈';
-   // click + touch
+ }
+
+ // Mute button with proper event handling for mobile and web
+ function toggleMute(e) {
+   if (e) e.preventDefault();
+   haptic('medium');
+   isMuted = !isMuted;
+   localStorage.setItem('casinoMusicMuted', isMuted ? 'true' : 'false');
+   
+   const mBtn = document.getElementById('muteBtn');
+   if (mBtn) mBtn.textContent = isMuted ? '🔇' : '🔈';
+
+   // Apply mute to music
+   if (musicAudio) musicAudio.volume = isMuted ? 0 : 0.7;
+   
+   // Apply mute to all currently playing SFX
+   sfxAudioList.forEach(fx => {
+     fx.volume = isMuted ? 0 : 1.0;
+   });
+ }
+
+ // Add event listeners for mute button (both click and touch)
+ if (muteBtn) {
    muteBtn.addEventListener('click', toggleMute);
-   muteBtn.addEventListener('touchstart', function(e){ e.preventDefault(); toggleMute(); }, { passive: false });
+   muteBtn.addEventListener('touchstart', function(e){ e.preventDefault(); toggleMute(e); }, { passive: false });
+ }
+
+ // Add event listeners for restart button (both click and touch)
+ if (restartBtn) {
+   restartBtn.addEventListener('click', function(e) { 
+     e.preventDefault(); 
+     restartCurrentSong(); 
+   });
+   restartBtn.addEventListener('touchstart', function(e){ 
+     e.preventDefault(); 
+     restartCurrentSong(); 
+   }, { passive: false });
  }
 
  startBtn.addEventListener('click', () => {
+   haptic('medium');
    started = true;
    startOverlay.style.display = 'none';
    quitBtn.style.display = 'block';
    muteBtn.style.display = 'flex';
+   restartBtn.style.display = 'flex';
    // start shuffled lobby music (first track random)
    initPlaylist();
    startBackgroundMusic();
  });
 
  function quitToStart() {
+   haptic('medium');
    // If a game overlay is open, close it instead of navigating away
    if (gameOverlay) { closeGameOverlay(); return; }
    // Stop any playing audio and show start overlay (index should show overlay by default)
@@ -281,17 +375,8 @@
    setTimeout(() => { window.location.href = 'index.html'; }, 80);
  }
 
- function toggleMute() {
-   isMuted = !isMuted;
-   localStorage.setItem('casinoMusicMuted', isMuted ? 'true' : 'false');
-
-   const mBtn = document.getElementById('muteBtn');
-   if (mBtn) mBtn.textContent = isMuted ? '🔇' : '🔈';
-
-   if (musicAudio) musicAudio.volume = isMuted ? 0 : 0.7;
- }
-
  quitBtn.addEventListener('click', quitToStart);
+ quitBtn.addEventListener('touchstart', function(e){ e.preventDefault(); quitToStart(); }, { passive: false });
 
  // Background image for canvas rendering
  const bgImg = new Image();
@@ -312,14 +397,14 @@
 
  function drawBackground(vp) {
    if (bgImg.complete && bgImg.naturalWidth > 0) {
-     ctx.imageSmoothingEnabled = false;
-     ctx.drawImage(bgImg, vp.offX, vp.offY, vp.viewW, vp.viewH);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(bgImg, vp.offX, vp.offY, vp.viewW, vp.viewH);
    } else {
-     const g = ctx.createLinearGradient(0,0,0,canvas.height);
-     g.addColorStop(0, '#2b1730');
-     g.addColorStop(1, '#1a0f1a');
-     ctx.fillStyle = g;
-     ctx.fillRect(0,0,canvas.width, canvas.height);
+    const g = ctx.createLinearGradient(0,0,0,canvas.height);
+    g.addColorStop(0, '#2b1730');
+    g.addColorStop(1, '#1a0f1a');
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,canvas.width, canvas.height);
    }
  }
 
@@ -333,13 +418,13 @@
    ctx.globalAlpha = 0.05;
    ctx.fillStyle = '#000';
    zones.forEach(z => {
-     const x = vp.offX + z.x * vp.scale;
-     const y = vp.offY + z.y * vp.scale;
-     const w = z.w * vp.scale;
-     const h = z.h * vp.scale;
-     ctx.strokeStyle = 'rgba(255,215,0,0.03)';
-     ctx.lineWidth = 2;
-     ctx.strokeRect(x, y, w, h);
+    const x = vp.offX + z.x * vp.scale;
+    const y = vp.offY + z.y * vp.scale;
+    const w = z.w * vp.scale;
+    const h = z.h * vp.scale;
+    ctx.strokeStyle = 'rgba(255,215,0,0.03)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, y, w, h);
    });
    ctx.restore();
  }
