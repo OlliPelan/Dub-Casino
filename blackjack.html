@@ -9,7 +9,7 @@
 <style>
    .corner-btn {
   position: fixed;
-  left: 1rem;    /* etäisyys vasemmasta reunasta */
+  left: 1rem;      /* etäisyys vasemmasta reunasta */
   bottom: 1rem;    /* etäisyys alareunasta */
   padding: 0.75rem 1.25rem;
   font-size: 1rem;
@@ -59,12 +59,12 @@
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
     width: 100%; height: 100%; overflow: hidden; position: fixed; font-family: 'Arial', sans-serif;
-    background: url('https://images.unsplash.com/photo-1699891730676-037bed3c1bed?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8d2Vic2l0ZSUyMGJhY2tncm91bmR8ZW58MHx8MHx8fDA%3D center center / cover no-repeat;
+    background: url('https://cdn.abacus.ai/images/01f70d5c-9af8-49a5-ad9f-268fb6e87fd4.png') center center / cover no-repeat;
     color: white; touch-action: none; display: flex; justify-content: center; align-items: center;
   }
   @media (min-width: 769px) and (min-height: 1345px) {
     html, body {
-    background-size: 768px 1344px;
+      background-size: 768px 1344px;
     }
   }
 
@@ -138,100 +138,36 @@
 </style>
 </head>
 <body>
-<button class="corner-btn" onclick="goBack()">←</button>
-<button class="mute-btn" id="muteBtn">🔊</button>
+<button class="corner-btn" onclick="parent.postMessage('closeGame', '*')">←</button>
+<button class="mute-btn" id="muteBtn" onclick="toggleMute()">🔊</button>
   <div class="game-container">
     <div class="message" id="message">Place your bet and press DEAL!</div>
     <div class="cards-area">
-    <div class="cards-container" id="dealerCards"></div>
-    <div class="cards-container" id="playerCards"></div>
+      <div class="cards-container" id="dealerCards"></div>
+      <div class="cards-container" id="playerCards"></div>
     </div>
     <div class="bottom-ui">
-    <div class="info-panel">
-    <div class="info-item"><div class="info-label">BALANCE</div><div class="info-value" id="balance">1000</div></div>
-    <div class="info-item"><div class="info-label">BET</div><div class="info-value" id="bet">10</div></div>
-    </div>
-    <div class="controls">
-    <div class="bet-controls"><button id="betMinus">-</button><button id="betPlus">+</button></div>
-    <button id="dealButton">DEAL</button>
-    <button id="hitButton" disabled>HIT</button>
-    <button id="standButton" disabled>STAND</button>
-    </div>
+      <div class="info-panel">
+        <div class="info-item"><div class="info-label">BALANCE</div><div class="info-value" id="balance">1000</div></div>
+        <div class="info-item"><div class="info-label">BET</div><div class="info-value" id="bet">10</div></div>
+      </div>
+      <div class="controls">
+        <div class="bet-controls"><button id="betMinus">-</button><button id="betPlus">+</button></div>
+        <button id="dealButton">DEAL</button>
+        <button id="hitButton" disabled>HIT</button>
+        <button id="standButton" disabled>STAND</button>
+      </div>
     </div>
   </div>
 
 <script>
-// Lock orientation to portrait
-if (screen.orientation && screen.orientation.lock) {
-  screen.orientation.lock('portrait').catch(() => {});
-}
-
-// Haptic feedback function
-function haptic(intensity = 'medium') {
-  if (navigator.vibrate) {
-    const patterns = { light: 10, medium: 20, heavy: 30 };
-    navigator.vibrate(patterns[intensity] || 20);
-  }
-}
-
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 const audioCtx = new AudioContext();
-let isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
-
-function playCardSound(){ 
-  if (isMuted) return;
-  const o=audioCtx.createOscillator(), g=audioCtx.createGain(); 
-  o.connect(g); g.connect(audioCtx.destination); 
-  o.frequency.value=400; o.type='sine'; 
-  g.gain.setValueAtTime(0.5,audioCtx.currentTime); // Increased from 0.3 to 0.5
-  g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.1); 
-  o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime+0.1);
-} 
-
-function playWinSound(){ 
-  if (isMuted) return;
-  const o=audioCtx.createOscillator(), g=audioCtx.createGain(); 
-  o.connect(g); g.connect(audioCtx.destination); 
-  o.type='sine'; 
-  o.frequency.setValueAtTime(523,audioCtx.currentTime); 
-  o.frequency.setValueAtTime(659,audioCtx.currentTime+0.1); 
-  o.frequency.setValueAtTime(784,audioCtx.currentTime+0.2); 
-  g.gain.setValueAtTime(0.5,audioCtx.currentTime); // Increased from 0.3 to 0.5
-  g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.4); 
-  o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime+0.4);
-} 
-
-function playLoseSound(){ 
-  if (isMuted) return;
-  const o=audioCtx.createOscillator(), g=audioCtx.createGain(); 
-  o.connect(g); g.connect(audioCtx.destination); 
-  o.type='sawtooth'; 
-  o.frequency.setValueAtTime(300,audioCtx.currentTime); 
-  o.frequency.exponentialRampToValueAtTime(100,audioCtx.currentTime+0.3); 
-  g.gain.setValueAtTime(0.35,audioCtx.currentTime); // Increased from 0.2 to 0.35
-  g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.3); 
-  o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime+0.3);
-} 
-
-function playButtonSound(){ 
-  if (isMuted) return;
-  const o=audioCtx.createOscillator(), g=audioCtx.createGain(); 
-  o.connect(g); g.connect(audioCtx.destination); 
-  o.frequency.value=800; o.type='square'; 
-  g.gain.setValueAtTime(0.2,audioCtx.currentTime); // Increased from 0.1 to 0.2
-  g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.05); 
-  o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime+0.05);
-} 
-
-function playChipSound(){ 
-  if (isMuted) return;
-  const o=audioCtx.createOscillator(), g=audioCtx.createGain(); 
-  o.connect(g); g.connect(audioCtx.destination); 
-  o.frequency.value=1000; o.type='sine'; 
-  g.gain.setValueAtTime(0.35,audioCtx.currentTime); // Increased from 0.2 to 0.35
-  g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.08); 
-  o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime+0.08);
-} 
+function playCardSound(){ const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.value=400; o.type='sine'; g.gain.setValueAtTime(0.3,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.1); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime+0.1);} 
+function playWinSound(){ const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.type='sine'; o.frequency.setValueAtTime(523,audioCtx.currentTime); o.frequency.setValueAtTime(659,audioCtx.currentTime+0.1); o.frequency.setValueAtTime(784,audioCtx.currentTime+0.2); g.gain.setValueAtTime(0.3,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.4); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime+0.4);} 
+function playLoseSound(){ const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.type='sawtooth'; o.frequency.setValueAtTime(300,audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(100,audioCtx.currentTime+0.3); g.gain.setValueAtTime(0.2,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.3); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime+0.3);} 
+function playButtonSound(){ const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.value=800; o.type='square'; g.gain.setValueAtTime(0.1,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.05); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime+0.05);} 
+function playChipSound(){ const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.value=1000; o.type='sine'; g.gain.setValueAtTime(0.2,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.08); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime+0.08);} 
 
 const suits=['♠','♥','♦','♣']; const values=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
 let deck=[], playerHand=[], dealerHand=[], balance=1000, bet=10, gameState='betting';
@@ -244,48 +180,69 @@ function calculateHandValue(hand){ let value=0, aces=0; for(let c of hand){ valu
 function renderCards(container, hand, hideFirst=false){ container.innerHTML=''; hand.forEach((card,idx)=>{ const cardEl=document.createElement('div'); if(hideFirst && idx===0){ cardEl.classList.add('card-back'); cardEl.title='Face Down Card'; } else { cardEl.classList.add('card'); if(card.suit==='♥' || card.suit==='♦'){ cardEl.classList.add('red'); } else { cardEl.classList.add('black'); } cardEl.innerHTML=`<div class="card-value">${card.value}<br>${card.suit}</div><div class="card-suit">${card.suit}</div><div class="card-value-bottom">${card.value}<br>${card.suit}</div>`; } container.appendChild(cardEl); }); }
 function updateUI(){ balanceEl.textContent=balance; betEl.textContent=bet; renderCards(playerCardsEl, playerHand); renderCards(dealerCardsEl, dealerHand, gameState==='playerTurn'); }
 
-function startRound(){ if(bet>balance){ messageEl.textContent='Not enough balance!'; playLoseSound(); return; } playButtonSound(); haptic('medium'); balance-=bet; playerHand=[]; dealerHand=[]; gameState='playerTurn'; messageEl.textContent='Your turn: HIT or STAND'; createDeck(); setTimeout(()=>{ playerHand.push(deck.pop()); playCardSound(); updateUI(); },100); setTimeout(()=>{ dealerHand.push(deck.pop()); playCardSound(); updateUI(); },300); setTimeout(()=>{ playerHand.push(deck.pop()); playCardSound(); updateUI(); },500); setTimeout(()=>{ dealerHand.push(deck.pop()); playCardSound(); updateUI(); },700); dealButton.disabled=true; hitButton.disabled=false; standButton.disabled=false; betMinus.disabled=true; betPlus.disabled=true; }
-function playerHit(){ if(gameState!=='playerTurn') return; playButtonSound(); haptic('medium'); playerHand.push(deck.pop()); playCardSound(); updateUI(); const pv=calculateHandValue(playerHand); if(pv>21) endRound('Bust! You lose.'); }
-function playerStand(){ if(gameState!=='playerTurn') return; playButtonSound(); haptic('medium'); gameState='dealerTurn'; messageEl.textContent='Dealer is playing...'; hitButton.disabled=true; standButton.disabled=true; dealerPlay(); }
+function startRound(){ if(bet>balance){ messageEl.textContent='Not enough balance!'; playLoseSound(); return; } playButtonSound(); balance-=bet; playerHand=[]; dealerHand=[]; gameState='playerTurn'; messageEl.textContent='Your turn: HIT or STAND'; createDeck(); setTimeout(()=>{ playerHand.push(deck.pop()); playCardSound(); updateUI(); },100); setTimeout(()=>{ dealerHand.push(deck.pop()); playCardSound(); updateUI(); },300); setTimeout(()=>{ playerHand.push(deck.pop()); playCardSound(); updateUI(); },500); setTimeout(()=>{ dealerHand.push(deck.pop()); playCardSound(); updateUI(); },700); dealButton.disabled=true; hitButton.disabled=false; standButton.disabled=false; betMinus.disabled=true; betPlus.disabled=true; }
+function playerHit(){ if(gameState!=='playerTurn') return; playButtonSound(); playerHand.push(deck.pop()); playCardSound(); updateUI(); const pv=calculateHandValue(playerHand); if(pv>21) endRound('Bust! You lose.'); }
+function playerStand(){ if(gameState!=='playerTurn') return; playButtonSound(); gameState='dealerTurn'; messageEl.textContent='Dealer is playing...'; hitButton.disabled=true; standButton.disabled=true; dealerPlay(); }
 function dealerPlay(){ updateUI(); let cardsToAdd=[]; let dv=calculateHandValue(dealerHand); while(dv<17){ const nc=deck.pop(); cardsToAdd.push(nc); dealerHand.push(nc); dv=calculateHandValue(dealerHand); } for(let i=0;i<cardsToAdd.length;i++){ dealerHand.pop(); } let delay=0; cardsToAdd.forEach((card,index)=>{ setTimeout(()=>{ dealerHand.push(card); playCardSound(); updateUI(); if(index===cardsToAdd.length-1){ setTimeout(()=>{ determineWinner(); },500); } }, delay); delay+=500; }); if(cardsToAdd.length===0){ setTimeout(()=>{ determineWinner(); },500); } }
-function determineWinner(){ const pv=calculateHandValue(playerHand); const dv=calculateHandValue(dealerHand); if(dv>21 || pv>dv){ balance+=bet*2; playWinSound(); haptic('heavy'); endRound('You win!'); } else if(pv===dv){ balance+=bet; playButtonSound(); haptic('medium'); endRound('Push. It\'s a tie.'); } else { playLoseSound(); haptic('heavy'); endRound('Dealer wins. You lose.'); } }
+function determineWinner(){ const pv=calculateHandValue(playerHand); const dv=calculateHandValue(dealerHand); if(dv>21 || pv>dv){ balance+=bet*2; playWinSound(); endRound('You win!'); } else if(pv===dv){ balance+=bet; playButtonSound(); endRound('Push. It\'s a tie.'); } else { playLoseSound(); endRound('Dealer wins. You lose.'); } }
 function endRound(message){ gameState='betting'; messageEl.textContent=message; dealButton.disabled=false; hitButton.disabled=true; standButton.disabled=true; betMinus.disabled=false; betPlus.disabled=false; updateUI(); }
+betMinus.addEventListener('click',()=>{ if(gameState==='betting' && bet>10){ bet-=10; betEl.textContent=bet; playChipSound(); } });
+betPlus.addEventListener('click',()=>{ if(gameState==='betting' && bet<balance){ bet+=10; betEl.textContent=bet; playChipSound(); } });
+dealButton.addEventListener('click',()=>{ if(gameState==='betting'){ startRound(); } }); hitButton.addEventListener('click',()=>{ playerHit(); }); standButton.addEventListener('click',()=>{ playerStand(); }); updateUI();
 
-betMinus.addEventListener('click',()=>{ if(gameState==='betting' && bet>10){ bet-=10; betEl.textContent=bet; playChipSound(); haptic('light'); } });
-betPlus.addEventListener('click',()=>{ if(gameState==='betting' && bet<balance){ bet+=10; betEl.textContent=bet; playChipSound(); haptic('light'); } });
-dealButton.addEventListener('click',()=>{ if(gameState==='betting'){ startRound(); } }); 
-hitButton.addEventListener('click',()=>{ playerHit(); }); 
-standButton.addEventListener('click',()=>{ playerStand(); }); 
-updateUI();
+/* ========== MUSIC & NAVIGATION ==========
+let currentGameAudio = null;
+let lobbyAudioForBack = null;
 
-// Add haptic feedback for all button touches
-document.querySelectorAll('button').forEach(btn => {
-  btn.addEventListener('touchstart', () => haptic('medium'), { passive: true });
-});
-
-// Navigation and mute functions
-function goBack() {
-  haptic('medium');
-  parent.postMessage('closeGame', '*');
+function goBackToLobby() {
+ 
+  // Navigate to lobby
+  setTimeout(() => {
+    window.location.href = 'index.html';
+  }, 100);
 }
 
-function toggleMute(e) {
-  if (e) e.preventDefault();
-  haptic('medium');
-  isMuted = !isMuted;
-  localStorage.setItem('casinoMusicMuted', isMuted ? 'true' : 'false');
+function toggleMute() {
+  const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
+  const newMutedState = !isMuted;
+  localStorage.setItem('casinoMusicMuted', newMutedState);
   
   const muteBtn = document.getElementById('muteBtn');
-  if (muteBtn) muteBtn.textContent = isMuted ? '🔇' : '🔊';
+  muteBtn.textContent = newMutedState ? '🔇' : '🔊';
+  
+  if (currentGameAudio) {
+    currentGameAudio.volume = newMutedState ? 0 : 0.7;
+  }
 }
 
-// Initialize mute button
-const muteBtn = document.getElementById('muteBtn');
-if (muteBtn) {
+(function(){
+  'use strict';
+  
+  // Get the music track for this game from localStorage
+  const gameMusic = localStorage.getItem('casinoGameMusic');
+  const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
+  
+  // Update mute button
+  const muteBtn = document.getElementById('muteBtn');
   muteBtn.textContent = isMuted ? '🔇' : '🔊';
-  muteBtn.addEventListener('click', toggleMute);
-  muteBtn.addEventListener('touchstart', function(e){ e.preventDefault(); toggleMute(e); }, { passive: false });
-}
+  
+  if (gameMusic) {
+    currentGameAudio = new Audio(gameMusic);
+    currentGameAudio.loop = false;
+    currentGameAudio.volume = isMuted ? 0 : 0.7;
+    
+    // When song ends, restart it
+    currentGameAudio.addEventListener('ended', () => {
+      currentGameAudio.currentTime = 0;
+      currentGameAudio.play();
+    });
+    
+    // Start playing automatically when page loads
+    setTimeout(() => {
+      currentGameAudio.play().catch(err => console.log('Audio play failed:', err));
+    }, 100);
+  }
+})();*/
 </script>
 </body>
 </html>

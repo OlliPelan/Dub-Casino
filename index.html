@@ -1,443 +1,495 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="screen-orientation" content="portrait" />
-  <title>Dub Casino Lobby</title>
-  <style>
-    html, body { margin: 0; padding: 0; background: #000; height: 100%; overscroll-behavior: none; touch-action: none; }
-    * { -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; }
-    #game-root { position: fixed; inset: 0; display: grid; place-items: center; background: #000; overflow: hidden; }
-    canvas { image-rendering: pixelated; image-rendering: crisp-edges; width: 100vw; height: 100vh; max-width: 100%; max-height: 100%; display: block; background: #1a0f1a; cursor: pointer; }
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <meta name="screen-orientation" content="portrait" />
+    <title>Poker</title>
 
-    .dialog { position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%); background: rgba(16,8,16,0.95); border: 1px solid #caa86a; color: #f1e8d0; padding: 10px 12px; width: min(80vw, 260px); border-radius: 8px; box-shadow: 0 8px 26px rgba(0,0,0,0.5); display: none; z-index: 10; pointer-events: auto; }
-    .dialog h4 { margin: 0 0 6px 0; font: 700 15px/1.25 system-ui, sans-serif; color: #ffd56b; }
-    .dialog p { margin: 0 0 10px 0; font: 12px/1.35 system-ui, sans-serif; opacity: 0.9; }
-    .start-overlay { padding-top: 60px; position: fixed; inset: 0; background: url('dc.png') center/cover no-repeat; display: grid; place-items: center; z-index: 9; }
-    .start-overlay button { background: #ffd56b; border: none; border-radius: 12px; padding: 16px 18px; color: #3a2b10; font: 800 16px/1 system-ui, sans-serif; cursor: pointer; }
+    <link rel="manifest" href="manifest.json" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
 
-    .quit-btn {
-    position: fixed;
-    left: 1rem;
+    <style>
+      .corner-btn {
+  position: fixed;
+  left: 1rem;      /* etäisyys vasemmasta reunasta */
+  bottom: 1rem;    /* etäisyys alareunasta */
+  padding: 0.75rem 1.25rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 20rem;
+  background-color: transparent;
+  color: rgb(0, 0, 0);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  z-index: 1000;
+}
+
+.mute-btn {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  padding: 0.75rem;
+  font-size: 1.2rem;
+  border: none;
+  border-radius: 50%;
+  background-color: rgba(255, 215, 0, 0.9);
+  color: rgb(0, 0, 0);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  z-index: 1000;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Responsiivisesti pienempi mobiilissa */
+@media (max-width: 600px) {
+  .corner-btn {
+    font-size: 0.9rem;
+    padding: 0.6rem 1rem;
+    left: 0.75rem;
     bottom: 1rem;
-    padding: 0.75rem 1.25rem;
+  }
+  .mute-btn {
+    width: 45px;
+    height: 45px;
     font-size: 1rem;
-    border: none;
-    border-radius: 20rem;
-    background-color: rgba(255, 77, 77, 0.9);
-    color: rgb(255, 255, 255);
-    cursor: pointer;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-    z-index: 1000;
-    font-weight: bold;
-    }
-
-    .mute-btn {
-    position: fixed;
-    right: 1rem;
-    bottom: 1rem;
-    padding: 0.75rem;
-    font-size: 1.2rem;
-    border: none;
-    border-radius: 50%;
-    background-color: rgba(255, 215, 0, 0.9);
-    color: rgb(0, 0, 0);
-    cursor: pointer;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-    z-index: 1000;
-    width: 50px;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    }
-
-    .restart-btn {
-    position: fixed;
-    right: 1rem;
-    top: 1rem;
-    padding: 0.75rem;
-    font-size: 1.2rem;
-    border: none;
-    border-radius: 50%;
-    background-color: rgba(100, 200, 255, 0.9);
-    color: rgb(0, 0, 0);
-    cursor: pointer;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-    z-index: 1000;
-    width: 50px;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    }
-
-    @media (max-width: 600px) {
-    .quit-btn { font-size: 0.9rem; padding: 0.6rem 1rem; left: 0.75rem; bottom: 1rem; }
-    .mute-btn { width: 45px; height: 45px; font-size: 1rem; }
-    .restart-btn { width: 45px; height: 45px; font-size: 1rem; }
-    }
-  </style>
+  }
+}
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html, body { width: 100%; height: 100%; overflow: hidden; }
+        body {
+            font-family: 'Arial', sans-serif;
+            /* Use the uploaded image public URL so it loads reliably in the Playground */
+            background: url('https://cdn.abacus.ai/images/05fbd73e-cd87-4fb9-a3b9-e0b9ee362ddc.png') center / cover no-repeat fixed;
+            display: flex; justify-content: center; align-items: center; color: white; touch-action: manipulation;
+        }
+        .game-container {
+            background: transparent; /* allow image to show through fully */
+            border-radius: 15px; padding: 15px; box-shadow: 0 0 50px rgba(0,0,0,0.25);
+            width: 100%; max-width: 600px; height: 100vh; max-height: 100vh; display: flex; flex-direction: column; overflow-y: auto;
+            margin-top: 80px;
+        }
+        .paytable { background: rgba(255, 215, 0, 0.08); border: 2px solid rgba(255,215,0,0.95); border-radius: 8px; padding: 8px; margin-bottom: 10px; font-size: clamp(0.65em, 2.5vw, 0.85em); }
+        .paytable-row { display: flex; justify-content: space-between; padding: 3px 8px; border-bottom: 1px solid rgba(255, 215, 0, 0.2); }
+        .paytable-row:last-child { border-bottom: none; }
+        .paytable-row.highlight { background: rgba(255, 215, 0, 0.35); font-weight: bold; animation: pulse 0.5s ease-in-out; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        .cards-container { display: flex; justify-content: center; gap: 5px; margin: 15px 0; flex-wrap: nowrap; padding: 0 5px; }
+        .card-wrapper { position: relative; flex: 1; max-width: 110px; }
+        .card { width: 100%; aspect-ratio: 5/7; background: rgba(255,255,255,0.95); border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); cursor: pointer; transition: transform 0.08s ease, box-shadow 0.12s ease; position: relative; overflow: visible; display: flex; flex-direction: column; justify-content: space-between; padding: 10px; will-change: transform; }
+        .card:active { transform: translateY(-2px) scale(0.99); }
+        .card.held { transform: translateY(-15px); box-shadow: 0 0 30px rgba(255, 215, 0, 0.8); }
+        .card.red { color: #dc143c !important; } .card.black { color: #000 !important; }
+        .card-value { font-size: 1.8em; font-weight: bold; line-height: 0.9; }
+        .card-suit { font-size: 2.8em; text-align: center; margin: auto 0; line-height: 1; }
+        .card-value-bottom { font-size: 1.8em; font-weight: bold; text-align: right; line-height: 0.9; transform: rotate(180deg); margin-top: 7px; }
+        .hold-label { position: absolute; top: -22px; left: 50%; transform: translateX(-50%); background: #ffd700; color: #000; padding: 3px 10px; border-radius: 5px; font-weight: bold; font-size: clamp(0.7em, 2.5vw, 0.9em); opacity: 0; transition: opacity 0.3s; white-space: nowrap; }
+        .card.held .hold-label { opacity: 1; }
+        .info-panel { display: flex; justify-content: space-around; margin: 15px 0; font-size: clamp(1em, 4vw, 1.3em); }
+        .info-item { text-align: center; }
+        .info-label { color: #ffd700; font-size: 0.7em; }
+        .info-value { font-weight: bold; font-size: 1.2em; text-shadow: 0 0 6px rgba(0,0,0,0.6); }
+        .controls { display: flex; justify-content: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+        .bet-controls { display: flex; align-items: center; gap: 8px; }
+        button { background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); border: none; padding: 12px 25px; font-size: clamp(0.9em, 3.5vw, 1.1em); font-weight: bold; border-radius: 10px; cursor: pointer; color: #000; box-shadow: 0 5px 15px rgba(0,0,0,0.3); transition: transform 80ms ease, box-shadow 120ms ease; touch-action: manipulation; user-select: none; will-change: transform; }
+        button:active { transform: scale(0.97); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .message { text-align: center; font-size: clamp(0.9em, 3.5vw, 1.2em); color: #ffd700; margin: 10px 0; min-height: 30px; font-weight: bold; text-shadow: 0 0 10px rgba(0,0,0,0.8); }
+        .card-back { background: linear-gradient(135deg, #c41e3a 0%, #8b0000 100%); display: flex; align-items: center; justify-content: center; font-size: 2.5em; color: white; padding: 0; overflow: hidden; }
+        @keyframes dealCard { 0% { transform: translateY(-50px) rotateY(180deg); opacity: 0; } 100% { transform: translateY(0) rotateY(0); opacity: 1; } }
+        .card.dealing { animation: dealCard 0.5s ease-out; }
+        @media (orientation: landscape) and (max-height: 600px) { .game-container { padding: 10px; max-height: 100vh; } .paytable { font-size: 0.6em; padding: 5px; } .paytable-row { padding: 2px 5px; } .cards-container { margin: 10px 0; } .info-panel { margin: 10px 0; font-size: 1em; } button { padding: 8px 15px; font-size: 0.9em; } }
+        @media (max-width: 350px) { .game-container { padding: 10px; } .cards-container { gap: 3px; } .hold-label { font-size: 0.65em; padding: 2px 6px; } .card-value, .card-value-bottom { font-size: 1.3em; } .card-suit { font-size: 2em; } }
+    </style>
 </head>
 <body>
-  <div id="game-root">
-    <canvas id="game" role="application" aria-label="Game lobby"></canvas>
-  </div>
+<button class="corner-btn" onclick="parent.postMessage('closeGame', '*')">←</button>
+<button class="mute-btn" id="muteBtn" onclick="toggleMute()">🔊</button>
 
-  <div id="startOverlay" class="start-overlay">
-    <button id="startBtn">Tap to Start</button>
-  </div>
+    <div class="game-container">
+        <div class="paytable" id="paytable">
+            <div class="paytable-row"><span>Royal Flush</span><span>250x</span></div>
+            <div class="paytable-row"><span>Straight Flush</span><span>50x</span></div>
+            <div class="paytable-row"><span>Four of a Kind</span><span>25x</span></div>
+            <div class="paytable-row"><span>Full House</span><span>9x</span></div>
+            <div class="paytable-row"><span>Flush</span><span>6x</span></div>
+            <div class="paytable-row"><span>Straight</span><span>4x</span></div>
+            <div class="paytable-row"><span>Three of a Kind</span><span>3x</span></div>
+            <div class="paytable-row"><span>Two Pair</span><span>2x</span></div>
+            <div class="paytable-row"><span>Jacks or Better</span><span>1x</span></div>
+        </div>
 
-  <button id="quitBtn" class="quit-btn" style="display:none;">Quit</button>
-  <button id="muteBtn" class="mute-btn" style="display:none;">🔈</button>
-  <button id="restartBtn" class="restart-btn" style="display:none;">🔄</button>
+        <div class="message" id="message">Place bet and press DEAL!</div>
 
-<script>
-(function(){
- 'use strict';
- 
- // Lock orientation to portrait
- if (screen.orientation && screen.orientation.lock) {
-   screen.orientation.lock('portrait').catch(() => {});
- }
- 
- const ASSETS = {
-   background: 'https://cdn.abacus.ai/images/ba393218-5d4c-4d90-a7e1-64870ec7fbfc.png',
-   pages: {
-    blackjack: 'blackjack.html',
-    poker: 'poker.html',
-    slots: 'slotmachine.html',
-    solitaire: 'solitaire.html'
-   },
-   // lobby track list (will be shuffled)
-   music: {
-    lobby: ['07 - Imagooo feat. Kimmovuohenkasvattamakoira (Remix) (1).mp3', 'Dollarit dub.mp3', 'Sivistynyt dub.mp3',
-    'Terve dub.mp3',
-    'Dollarit dub.mp3',
-    '10 - (Pelastakaa) Koisotie (Remix).mp3']
-   },
-   // short sound effects to play when selecting a game (do not stop music)
-   sfx: ['fx1.mp3','fx3.mp3','fx4.mp3','fx7.mp3']
- };
+        <div class="cards-container" id="cardsContainer">
+            <div class="card-wrapper">
+                <div class="hold-label">HOLD</div>
+                <div class="card card-back" data-index="0">🂠</div>
+            </div>
+            <div class="card-wrapper">
+                <div class="hold-label">HOLD</div>
+                <div class="card card-back" data-index="1">🂠</div>
+            </div>
+            <div class="card-wrapper">
+                <div class="hold-label">HOLD</div>
+                <div class="card card-back" data-index="2">🂠</div>
+            </div>
+            <div class="card-wrapper">
+                <div class="hold-label">HOLD</div>
+                <div class="card card-back" data-index="3">🂠</div>
+            </div>
+            <div class="card-wrapper">
+                <div class="hold-label">HOLD</div>
+                <div class="card card-back" data-index="4">🂠</div>
+            </div>
+        </div>
 
- // Haptic feedback function
- function haptic(intensity = 'medium') {
-   if (navigator.vibrate) {
-     const patterns = { light: 10, medium: 20, heavy: 30 };
-     navigator.vibrate(patterns[intensity] || 20);
-   }
- }
+        <div class="info-panel">
+            <div class="info-item">
+                <div class="info-label">CREDITS</div>
+                <div class="info-value" id="credits">100</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">BET</div>
+                <div class="info-value" id="betDisplay">5</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">WIN</div>
+                <div class="info-value" id="winDisplay">0</div>
+            </div>
+        </div>
 
- // disable some gestures at root
- ['gesturestart','gesturechange','gestureend','dblclick'].forEach(t => {
-   document.addEventListener(t, e => e.preventDefault(), { passive:false });
- });
+        <div class="controls">
+            <div class="bet-controls">
+                <button id="betMinus" aria-label="Decrease bet">-</button>
+                <button id="betPlus" aria-label="Increase bet">+</button>
+            </div>
+            <button id="dealButton">DEAL</button>
+        </div>
+    </div>
 
- const canvas = document.getElementById('game');
- const ctx = canvas.getContext('2d');
+    <script>
+      // Prevent double-tap zoom hiccups
+      let lastTouchEnd = 0;
+      document.addEventListener('touchend', function (event) {
+        const now = Date.now();
+        if (now - lastTouchEnd <= 300) event.preventDefault();
+        lastTouchEnd = now;
+      }, false);
 
- function resizeCanvas() {
-   const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
-   const w = Math.floor(window.innerWidth);
-   const h = Math.floor(window.innerHeight);
-   canvas.width = w * dpr;
-   canvas.height = h * dpr;
-   canvas.style.width = w + 'px';
-   canvas.style.height = h + 'px';
-   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
- }
- window.addEventListener('resize', resizeCanvas);
- resizeCanvas();
+      // ========== GAME STATE ==========
+      let credits = 100;
+      let bet = 5;
+      let currentHand = [];
+      let heldCards = [false, false, false, false, false];
+      let gameState = 'betting';
+      let deck = [];
 
- const world = { width: 768, height: 1365 };
+      const suits = ['\u2660', '\u2665', '\u2666', '\u2663'];
+      const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
 
- const zones = [
-   { id: 'blackjack', label: 'Blackjack', x: world.width/2 - 190, y: 150, w: 380, h: 200 },
-   { id: 'poker', label: 'Poker', x: 30, y: 610, w: 280, h: 190 },
-   { id: 'slots', label: 'Slots', x: world.width - 310, y: 610, w: 280, h: 180 },
-   { id: 'solitaire', label: 'Solitaire', x: world.width/2 - 170, y: world.height - 270, w: 340, h: 170 }
- ];
+      // ========== AUDIO ==========
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
- // --- Audio state ---
- let musicAudio = null;    // Audio object for lobby music
- let sfxAudioList = [];    // List of currently playing SFX audio objects
- let playlist = [];    // shuffled queue of tracks
- let isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
+      function playSound(frequency, duration, type = 'sine') {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        oscillator.connect(gainNode); gainNode.connect(audioContext.destination);
+        oscillator.frequency.value = frequency; oscillator.type = type;
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+        oscillator.start(audioContext.currentTime); oscillator.stop(audioContext.currentTime + duration);
+      }
+      function playDealSound() { playSound(400, 0.1, 'square'); }
+      function playHoldSound() { playSound(600, 0.1, 'sine'); }
+      function playWinSound() {
+        playSound(800, 0.2, 'sine');
+        setTimeout(() => playSound(1000, 0.2, 'sine'), 100);
+        setTimeout(() => playSound(1200, 0.3, 'sine'), 200);
+      }
+      function playLoseSound() { playSound(200, 0.3, 'sawtooth'); }
 
- function shuffleArray(arr) {
-   const a = arr.slice();
-   for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-   }
-   return a;
- }
+      // Cached low-latency beep for bet +/- feedback
+      let audioReady = false;
+      let beepBuffer = null;
+      (async function initAudio() {
+        try {
+          const ctx = audioContext;
+          const duration = 0.06;
+          const sampleRate = ctx.sampleRate;
+          const length = Math.floor(duration * sampleRate);
+          beepBuffer = ctx.createBuffer(1, length, sampleRate);
+          const data = beepBuffer.getChannelData(0);
+          const freq = 600;
+          for (let i = 0; i < length; i++) {
+            const t = i / sampleRate;
+            data[i] = Math.sin(2 * Math.PI * freq * t) * Math.exp(-t * 25) * 0.35;
+          }
+          audioReady = true;
+        } catch (e) {}
+      })();
+      function playBeep() {
+        if (!audioReady || !beepBuffer) return;
+        const src = audioContext.createBufferSource();
+        const gain = audioContext.createGain();
+        src.buffer = beepBuffer;
+        src.connect(gain); gain.connect(audioContext.destination);
+        gain.gain.value = 0.9;
+        src.start();
+      }
 
- function initPlaylist() {
-   // create a fresh shuffled playlist so first song is random and order is randomized
-   playlist = shuffleArray(ASSETS.music.lobby.filter(Boolean));
- }
+      // ========== DECK & HAND HELPERS ==========
+      function createDeck() {
+        deck = [];
+        for (let i = 0; i < 52; i++) deck.push(i);
+        shuffleDeck();
+      }
+      function shuffleDeck() {
+        for (let i = deck.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [deck[i], deck[j]] = [deck[j], deck[i]];
+        }
+      }
+      function drawCard() { return deck.pop(); }
+      function getCardValue(cardIndex) { return (cardIndex % 13) + 1; }
+      function getCardSuit(cardIndex) { return Math.floor(cardIndex / 13); }
+      function getCardDisplay(cardIndex) {
+        const value = cardIndex % 13;
+        const suit = Math.floor(cardIndex / 13);
+        const isRed = suit === 1 || suit === 2;
+        return { value: values[value], suit: suits[suit], color: isRed ? 'red' : 'black' };
+      }
 
- function playNextTrack() {
-   if (musicAudio) {
-    try { musicAudio.removeEventListener('ended', playNextTrack); } catch(e){}
-    try { musicAudio.pause(); } catch(e){}
-    musicAudio = null;
-   }
+      function evaluateHand(hand) {
+        const cardValues = hand.map(c => getCardValue(c)).sort((a, b) => a - b);
+        const cardSuits = hand.map(c => getCardSuit(c));
+        const valueCounts = {};
+        cardValues.forEach(v => valueCounts[v] = (valueCounts[v] || 0) + 1);
+        const counts = Object.values(valueCounts).sort((a, b) => b - a);
+        const isFlush = cardSuits.every(s => s === cardSuits[0]);
+        let isStraight = false;
+        if (cardValues[4] - cardValues[0] === 4 && new Set(cardValues).size === 5) isStraight = true;
+        if (cardValues[0] === 1 && cardValues[1] === 2 && cardValues[2] === 3 && cardValues[3] === 4 && cardValues[4] === 5) isStraight = true;
+        if (cardValues[0] === 1 && cardValues[1] === 10 && cardValues[2] === 11 && cardValues[3] === 12 && cardValues[4] === 13) isStraight = true;
+        const isRoyal = isFlush && isStraight && cardValues[0] === 1 && cardValues[4] === 13;
+        if (isRoyal) return { name: 'Royal Flush', multiplier: 250, index: 0 };
+        if (isFlush && isStraight) return { name: 'Straight Flush', multiplier: 50, index: 1 };
+        if (counts[0] === 4) return { name: 'Four of a Kind', multiplier: 25, index: 2 };
+        if (counts[0] === 3 && counts[1] === 2) return { name: 'Full House', multiplier: 9, index: 3 };
+        if (isFlush) return { name: 'Flush', multiplier: 6, index: 4 };
+        if (isStraight) return { name: 'Straight', multiplier: 4, index: 5 };
+        if (counts[0] === 3) return { name: 'Three of a Kind', multiplier: 3, index: 6 };
+        if (counts[0] === 2 && counts[1] === 2) return { name: 'Two Pair', multiplier: 2, index: 7 };
+        if (counts[0] === 2) {
+          const pairValue = Object.keys(valueCounts).find(k => valueCounts[k] === 2);
+          if (pairValue == 1 || pairValue >= 11) return { name: 'Jacks or Better', multiplier: 1, index: 8 };
+        }
+        return { name: 'No Win', multiplier: 0, index: -1 };
+      }
 
-   if (playlist.length === 0) initPlaylist();
-   const next = playlist.shift();
-   if (!next) return;
+      function displayCard(index, cardIndex) {
+        const cardElement = document.querySelectorAll('.card')[index];
+        const cardDisplay = getCardDisplay(cardIndex);
+        cardElement.classList.add('dealing');
+        cardElement.classList.remove('card-back', 'red', 'black');
+        cardElement.classList.add(cardDisplay.color);
+        cardElement.innerHTML = `
+          <div class="card-value">${cardDisplay.value}<br>${cardDisplay.suit}</div>
+          <div class="card-suit">${cardDisplay.suit}</div>
+          <div class="card-value-bottom">${cardDisplay.value}<br>${cardDisplay.suit}</div>
+        `;
+        setTimeout(() => cardElement.classList.remove('dealing'), 500);
+      }
 
-   musicAudio = new Audio(next);
-   musicAudio.loop = false;
-   musicAudio.volume = isMuted ? 0 : 0.7;
-   musicAudio.addEventListener('ended', () => {
-    // play tracks forever by playing next in the shuffled queue
-    setTimeout(playNextTrack, 30);
-   });
-   musicAudio.play().catch(err => console.warn('Music play failed:', err));
- }
+      function dealInitialHand() {
+        createDeck();
+        currentHand = [];
+        heldCards = [false, false, false, false, false];
+        document.querySelectorAll('.card').forEach(card => {
+          card.classList.remove('red', 'black', 'held');
+          card.classList.add('card-back');
+          card.innerHTML = '🂠';
+        });
+        for (let i = 0; i < 5; i++) {
+          setTimeout(() => {
+            playDealSound();
+            const card = drawCard();
+            currentHand.push(card);
+            displayCard(i, card);
+            if (i === 4) {
+              gameState = 'holding';
+              document.getElementById('message').textContent = 'Select cards to hold and press DRAW!';
+              document.getElementById('dealButton').textContent = 'DRAW';
+              enableCardSelection();
+            }
+          }, i * 150);
+        }
+      }
 
- function startBackgroundMusic() {
-   if (!playlist || playlist.length === 0) initPlaylist();
-   if (!musicAudio) playNextTrack();
- }
+      function enableCardSelection() {
+        const cards = document.querySelectorAll('.card');
+        cards.forEach((card, index) => {
+          card.style.cursor = 'pointer';
+          card.onclick = () => toggleHold(index);
+        });
+      }
+      function disableCardSelection() {
+        const cards = document.querySelectorAll('.card');
+        cards.forEach(card => { card.style.cursor = 'default'; card.onclick = null; });
+      }
+      function toggleHold(index) {
+        if (gameState !== 'holding') return;
+        playHoldSound();
+        heldCards[index] = !heldCards[index];
+        const card = document.querySelectorAll('.card')[index];
+        if (heldCards[index]) card.classList.add('held'); else card.classList.remove('held');
+      }
 
- function restartCurrentSong() {
-   haptic('medium');
-   if (musicAudio) {
-     musicAudio.currentTime = 0;
-     if (musicAudio.paused) {
-       musicAudio.play().catch(err => console.warn('Restart play failed:', err));
-     }
-   }
- }
+      function drawNewCards() {
+        disableCardSelection();
+        let drawCount = 0;
+        for (let i = 0; i < 5; i++) {
+          if (!heldCards[i]) {
+            setTimeout(() => {
+              playDealSound();
+              const card = drawCard();
+              currentHand[i] = card;
+              displayCard(i, card);
+              drawCount++;
+              if (drawCount === heldCards.filter(h => !h).length) setTimeout(() => evaluateAndPayout(), 500);
+            }, i * 150);
+          }
+        }
+        if (heldCards.every(h => h)) setTimeout(() => evaluateAndPayout(), 500);
+      }
 
- // play a short, one-shot SFX without stopping music
- function playRandomSfx() {
-   try {
-    const sfxList = ASSETS.sfx.filter(Boolean);
-    if (!sfxList.length) return;
-    const pick = sfxList[Math.floor(Math.random() * sfxList.length)];
-    const fx = new Audio(pick);
-    fx.loop = false;
-    fx.volume = isMuted ? 0 : 1.0; // Increased volume from 0.85 to 1.0
-    sfxAudioList.push(fx);
-    fx.addEventListener('ended', () => {
-      const index = sfxAudioList.indexOf(fx);
-      if (index > -1) sfxAudioList.splice(index, 1);
-    });
-    fx.play().catch(err => console.warn('SFX play failed:', err));
-   } catch(e) { console.warn('SFX error', e); }
- }
+      function evaluateAndPayout() {
+        const result = evaluateHand(currentHand);
+        const winAmount = bet * result.multiplier;
+        const paytableRows = document.querySelectorAll('.paytable-row');
+        paytableRows.forEach(row => row.classList.remove('highlight'));
+        if (result.index >= 0) paytableRows[result.index].classList.add('highlight');
+        if (winAmount > 0) {
+          playWinSound();
+          credits += winAmount;
+          document.getElementById('message').textContent = `${result.name}! WIN ${winAmount}!`;
+        } else {
+          playLoseSound();
+          document.getElementById('message').textContent = 'No win. Try again!';
+        }
+        document.getElementById('winDisplay').textContent = winAmount;
+        document.getElementById('credits').textContent = credits;
+        gameState = 'betting';
+        document.getElementById('dealButton').textContent = 'DEAL';
+        document.querySelectorAll('.card').forEach(card => card.classList.remove('held'));
+      }
 
- // --- game overlay iframe to load games in-page (keeps lobby music playing)
- let gameOverlay = null;
- function openGameOverlay(url) {
-   if (gameOverlay) {
-    gameOverlay.src = url;
-    return;
-   }
-   gameOverlay = document.createElement('iframe');
-   gameOverlay.id = 'gameOverlay';
-   Object.assign(gameOverlay.style, {
-    position: 'fixed', top: '0', left: '0', width: '100%', height: '100%', border: '0', zIndex: 2000, background: '#000'
-   });
-   gameOverlay.src = url;
-   gameOverlay.setAttribute('allowfullscreen', '');
-   document.body.appendChild(gameOverlay);
-   if (quitBtn) { quitBtn.textContent = 'Close'; quitBtn.dataset.overlayOpen = 'true'; quitBtn.style.display = 'block'; }
- }
- function closeGameOverlay() {
-   if (!gameOverlay) return;
-   try { gameOverlay.src = 'about:blank'; } catch(e){}
-   document.body.removeChild(gameOverlay);
-   gameOverlay = null;
-   if (quitBtn) { quitBtn.textContent = 'Quit'; delete quitBtn.dataset.overlayOpen; }
- }
+      // ========== BET CONTROLS: Improved responsiveness ==========
+      const betMinusEl = document.getElementById('betMinus');
+      const betPlusEl  = document.getElementById('betPlus');
+      const betDisplayEl = document.getElementById('betDisplay');
+      function updateBetDisplay() { betDisplayEl.textContent = bet; }
 
- window.addEventListener('message', (e) => {
-   if (e.data === 'closeGame') closeGameOverlay();
- });
+      function changeBet(delta) {
+        if (gameState !== 'betting') return;
+        const newBet = bet + delta;
+        if (newBet >= 1 && newBet <= credits) {
+          bet = newBet;
+          updateBetDisplay();
+          playBeep();
+        }
+      }
 
- function worldPointFromClient(x, y){
-   const rect = canvas.getBoundingClientRect();
-   const clickX = x - rect.left;
-   const clickY = y - rect.top;
-   const vp = getViewport();
-   const worldX = (clickX - vp.offX) / vp.scale;
-   const worldY = (clickY - vp.offY) / vp.scale;
-   return { worldX, worldY };
- }
+      betMinusEl.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        changeBet(-1);
+      });
 
- // ---- GAME SELECT (lobby) ----
- // Start the selected game's sound effect inside this user gesture before navigating.
- canvas.addEventListener('click', (e) => {
-   if (!started) return;
-   haptic('medium');
-   const { worldX, worldY } = worldPointFromClient(e.clientX, e.clientY);
-   const clickedZone = zones.find(z => worldX >= z.x && worldX <= z.x + z.w && worldY >= z.y && worldY <= z.y + z.h);
-   if (clickedZone) {
-    const url = ASSETS.pages[clickedZone.id];
+      betPlusEl.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        changeBet(1);
+      });
 
-    // play a random SFX (does NOT stop or replace the lobby music)
-    playRandomSfx();
+      // ========== DEAL/DRAW ==========
+      const dealButton = document.getElementById('dealButton');
+      dealButton.addEventListener('click', () => {
+        if (gameState === 'betting') {
+          if (credits < bet) { document.getElementById('message').textContent = 'Not enough credits!'; playLoseSound(); return; }
+          credits -= bet;
+          document.getElementById('credits').textContent = credits;
+          document.getElementById('winDisplay').textContent = 0;
+          document.getElementById('message').textContent = '';
+          document.querySelectorAll('.paytable-row').forEach(row => row.classList.remove('highlight'));
+          gameState = 'firstDeal';
+          dealInitialHand();
+        } else if (gameState === 'holding') {
+          gameState = 'secondDeal';
+          drawNewCards();
+        }
+      });
 
-    if (url) setTimeout(() => { openGameOverlay(url); }, 180);
-   }
- });
-
- canvas.addEventListener('touchstart', (e) => {
-   if (e.target !== canvas || !started) return;
-   e.preventDefault();
-   haptic('medium');
-   const t = e.touches[0];
-   const { worldX, worldY } = worldPointFromClient(t.clientX, t.clientY);
-   const clickedZone = zones.find(z => worldX >= z.x && worldX <= z.x + z.w && worldY >= z.y && worldY <= z.y + z.h);
-   if (clickedZone) {
-    const url = ASSETS.pages[clickedZone.id];
-    playRandomSfx();
-    if (url) setTimeout(() => { openGameOverlay(url); }, 180);
-   }
- }, { passive:false });
-
- const startOverlay = document.getElementById('startOverlay');
- const startBtn = document.getElementById('startBtn');
- const quitBtn = document.getElementById('quitBtn');
- const muteBtn = document.getElementById('muteBtn');
- const restartBtn = document.getElementById('restartBtn');
- let started = false;
-
- // Initialize mute button state
- if (muteBtn) {
-   muteBtn.textContent = isMuted ? '🔇' : '🔈';
- }
-
- // Mute button with proper event handling for mobile and web
- function toggleMute(e) {
-   if (e) e.preventDefault();
-   haptic('medium');
-   isMuted = !isMuted;
-   localStorage.setItem('casinoMusicMuted', isMuted ? 'true' : 'false');
-   
-   const mBtn = document.getElementById('muteBtn');
-   if (mBtn) mBtn.textContent = isMuted ? '🔇' : '🔈';
-
-   // Apply mute to music
-   if (musicAudio) musicAudio.volume = isMuted ? 0 : 0.7;
-   
-   // Apply mute to all currently playing SFX
-   sfxAudioList.forEach(fx => {
-     fx.volume = isMuted ? 0 : 1.0;
-   });
- }
-
- // Add event listeners for mute button (both click and touch)
- if (muteBtn) {
-   muteBtn.addEventListener('click', toggleMute);
-   muteBtn.addEventListener('touchstart', function(e){ e.preventDefault(); toggleMute(e); }, { passive: false });
- }
-
- // Add event listeners for restart button (both click and touch)
- if (restartBtn) {
-   restartBtn.addEventListener('click', function(e) { 
-     e.preventDefault(); 
-     restartCurrentSong(); 
-   });
-   restartBtn.addEventListener('touchstart', function(e){ 
-     e.preventDefault(); 
-     restartCurrentSong(); 
-   }, { passive: false });
- }
-
- startBtn.addEventListener('click', () => {
-   haptic('medium');
-   started = true;
-   startOverlay.style.display = 'none';
-   quitBtn.style.display = 'block';
-   muteBtn.style.display = 'flex';
-   restartBtn.style.display = 'flex';
-   // start shuffled lobby music (first track random)
-   initPlaylist();
-   startBackgroundMusic();
- });
-
- function quitToStart() {
-   haptic('medium');
-   // If a game overlay is open, close it instead of navigating away
-   if (gameOverlay) { closeGameOverlay(); return; }
-   // Stop any playing audio and show start overlay (index should show overlay by default)
-   if (musicAudio) { try { musicAudio.pause(); } catch(e){} musicAudio = null; }
-   localStorage.removeItem('casinoGameMusic');
-   setTimeout(() => { window.location.href = 'index.html'; }, 80);
- }
-
- quitBtn.addEventListener('click', quitToStart);
- quitBtn.addEventListener('touchstart', function(e){ e.preventDefault(); quitToStart(); }, { passive: false });
-
- // Background image for canvas rendering
- const bgImg = new Image();
- bgImg.crossOrigin = 'anonymous';
- bgImg.onerror = () => console.log('bg load error — gradient fallback');
- bgImg.src = ASSETS.background;
-
- function getViewport() {
-   const vw = canvas.width / (window.devicePixelRatio || 1);
-   const vh = canvas.height / (window.devicePixelRatio || 1);
-   const scale = Math.min(vw / world.width, vh / world.height);
-   const viewW = world.width * scale;
-   const viewH = world.height * scale;
-   const offX = (vw - viewW) / 2;
-   const offY = (vh - viewH) / 2;
-   return { scale, offX, offY, vw, vh, viewW, viewH };
- }
-
- function drawBackground(vp) {
-   if (bgImg.complete && bgImg.naturalWidth > 0) {
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(bgImg, vp.offX, vp.offY, vp.viewW, vp.viewH);
-   } else {
-    const g = ctx.createLinearGradient(0,0,0,canvas.height);
-    g.addColorStop(0, '#2b1730');
-    g.addColorStop(1, '#1a0f1a');
-    ctx.fillStyle = g;
-    ctx.fillRect(0,0,canvas.width, canvas.height);
-   }
- }
-
- function render(dt) {
-   const vp = getViewport();
-   ctx.clearRect(0,0,canvas.width, canvas.height);
-   drawBackground(vp);
-
-   // subtle zone outlines intentionally left out (no glow)
-   ctx.save();
-   ctx.globalAlpha = 0.05;
-   ctx.fillStyle = '#000';
-   zones.forEach(z => {
-    const x = vp.offX + z.x * vp.scale;
-    const y = vp.offY + z.y * vp.scale;
-    const w = z.w * vp.scale;
-    const h = z.h * vp.scale;
-    ctx.strokeStyle = 'rgba(255,215,0,0.03)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x, y, w, h);
-   });
-   ctx.restore();
- }
-
- let last = performance.now();
- function loop(now) {
-   const dt = Math.min(48, now - last); last = now;
-   if (started) { render(dt); }
-   requestAnimationFrame(loop);
- }
- requestAnimationFrame(loop);
-})();
-</script>
-
+      // Initial deck
+      createDeck();
+      
+      /* ========== MUSIC & NAVIGATION ==========
+      let currentGameAudio = null;
+      let lobbyAudioForBack = null;
+      
+      function goBackToLobby() {
+        
+        // Navigate to lobby
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 100);
+      }
+      
+      function toggleMute() {
+        const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
+        const newMutedState = !isMuted;
+        localStorage.setItem('casinoMusicMuted', newMutedState);
+        
+        const muteBtn = document.getElementById('muteBtn');
+        muteBtn.textContent = newMutedState ? '🔇' : '🔊';
+        
+        if (currentGameAudio) {
+          currentGameAudio.volume = newMutedState ? 0 : 0.7;
+        }
+      }
+      
+      (function(){
+        'use strict';
+        
+        // Get the music track for this game from localStorage
+        const gameMusic = localStorage.getItem('casinoGameMusic');
+        const isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
+        
+        // Update mute button
+        const muteBtn = document.getElementById('muteBtn');
+        muteBtn.textContent = isMuted ? '🔇' : '🔊';
+        
+        if (gameMusic) {
+          currentGameAudio = new Audio(gameMusic);
+          currentGameAudio.loop = false;
+          currentGameAudio.volume = isMuted ? 0 : 0.7;
+          
+          // When song ends, restart it
+          currentGameAudio.addEventListener('ended', () => {
+            currentGameAudio.currentTime = 0;
+            currentGameAudio.play();
+          });
+          
+          // Start playing automatically when page loads
+          setTimeout(() => {
+            currentGameAudio.play().catch(err => console.log('Audio play failed:', err));
+          }, 100);
+        }
+      })();*/
+    </script>
 </body>
 </html>
