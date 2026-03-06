@@ -68,7 +68,7 @@
   </div>
 
   <button id="quitBtn" class="quit-btn" style="display:none;">Quit</button>
-  <!--<button id="muteBtn" class="mute-btn" style="display:none;">🔈</button>-->
+  <button id="muteBtn" class="mute-btn" style="display:none;">🔈</button>
 
 <script>
 (function(){
@@ -281,15 +281,15 @@
    setTimeout(() => { window.location.href = 'index.html'; }, 80);
  }
 
-// function toggleMute() {
-//   isMuted = !isMuted;
-  // localStorage.setItem('casinoMusicMuted', isMuted ? 'true' : 'false');
+ function toggleMute() {
+   isMuted = !isMuted;
+   localStorage.setItem('casinoMusicMuted', isMuted ? 'true' : 'false');
 
-  // const mBtn = document.getElementById('muteBtn');
-  // if (mBtn) mBtn.textContent = isMuted ? '🔇' : '🔈';
+   const mBtn = document.getElementById('muteBtn');
+   if (mBtn) mBtn.textContent = isMuted ? '🔇' : '🔈';
 
-  // if (musicAudio) musicAudio.volume = isMuted ? 0 : 0.7;
-// }
+   if (musicAudio) musicAudio.volume = isMuted ? 0 : 0.7;
+ }
 
  quitBtn.addEventListener('click', quitToStart);
 
