@@ -176,7 +176,7 @@
      const pick = sfxList[Math.floor(Math.random() * sfxList.length)];
      const fx = new Audio(pick);
      fx.loop = false;
-     fx.volume = isMuted ? 0 : 0.99; // fx slightly louder by default
+     fx.volume = isMuted ? 0 : 0.65; // fx slightly louder by default
      fx.play().catch(err => console.warn('SFX play failed:', err));
    } catch(e) { console.warn('SFX error', e); }
  }
