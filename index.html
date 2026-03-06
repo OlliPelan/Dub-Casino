@@ -256,12 +256,12 @@
  let started = false;
 
  // Initialize mute button state
- if (muteBtn) {
-   muteBtn.textContent = isMuted ? '🔇' : '🔈';
-   // click + touch
-   muteBtn.addEventListener('click', toggleMute);
-   muteBtn.addEventListener('touchstart', function(e){ e.preventDefault(); toggleMute(); }, { passive: false });
- }
+//  if (muteBtn) {
+//    muteBtn.textContent = isMuted ? '🔇' : '🔈';
+//    // click + touch
+//    muteBtn.addEventListener('click', toggleMute);
+//    muteBtn.addEventListener('touchstart', function(e){ e.preventDefault(); toggleMute(); }, { passive: false });
+//  }
 
  startBtn.addEventListener('click', () => {
    started = true;
