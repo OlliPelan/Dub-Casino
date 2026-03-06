@@ -32,7 +32,7 @@
     font-weight: bold;
     }
 
-    .mute-btn {
+    /* .mute-btn {
     position: fixed;
     right: 1rem;
     bottom: 1rem;
@@ -50,12 +50,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    }
+    } */
 
     @media (max-width: 600px) {
     .quit-btn { font-size: 0.9rem; padding: 0.6rem 1rem; left: 0.75rem; bottom: 1rem; }
-    .mute-btn { width: 45px; height: 45px; font-size: 1rem; }
+    /* .mute-btn { width: 45px; height: 45px; font-size: 1rem; } */
     }
+
   </style>
 </head>
 <body>
@@ -68,7 +69,7 @@
   </div>
 
   <button id="quitBtn" class="quit-btn" style="display:none;">Quit</button>
-  <button id="muteBtn" class="mute-btn" style="display:none;">🔈</button>
+  <!-- <button id="muteBtn" class="mute-btn" style="display:none;">🔈</button> -->
 
 <script>
 (function(){
@@ -125,7 +126,7 @@
  // --- Audio state ---
  let musicAudio = null;           // Audio object for lobby music
  let playlist = [];              // shuffled queue of tracks
- let isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
+//  let isMuted = localStorage.getItem('casinoMusicMuted') === 'true';
 
  function shuffleArray(arr) {
    const a = arr.slice();
@@ -175,7 +176,7 @@
      const pick = sfxList[Math.floor(Math.random() * sfxList.length)];
      const fx = new Audio(pick);
      fx.loop = false;
-     fx.volume = isMuted ? 0 : 0.85; // fx slightly louder by default
+     fx.volume = isMuted ? 0 : 0.99; // fx slightly louder by default
      fx.play().catch(err => console.warn('SFX play failed:', err));
    } catch(e) { console.warn('SFX error', e); }
  }
@@ -251,23 +252,23 @@
  const startOverlay = document.getElementById('startOverlay');
  const startBtn = document.getElementById('startBtn');
  const quitBtn = document.getElementById('quitBtn');
- const muteBtn = document.getElementById('muteBtn');
+//  const muteBtn = document.getElementById('muteBtn');
  let started = false;
 
  // Initialize mute button state
- if (muteBtn) {
-   muteBtn.textContent = isMuted ? '🔇' : '🔈';
-   // click + touch
-   muteBtn.addEventListener('click', toggleMute);
-   muteBtn.addEventListener('touchstart', function(e){ e.preventDefault(); toggleMute(); }, { passive: false });
- }
+//  if (muteBtn) {
+//    muteBtn.textContent = isMuted ? '🔇' : '🔈';
+//    // click + touch
+//    muteBtn.addEventListener('click', toggleMute);
+//    muteBtn.addEventListener('touchstart', function(e){ e.preventDefault(); toggleMute(); }, { passive: false });
+//  }
 
  startBtn.addEventListener('click', () => {
    started = true;
    startOverlay.style.display = 'none';
    quitBtn.style.display = 'block';
-   muteBtn.style.display = 'flex';
-   // start shuffled lobby music (first track random)
+  //  muteBtn.style.display = 'flex';
+  // start shuffled lobby music (first track random)
    initPlaylist();
    startBackgroundMusic();
  });
@@ -281,15 +282,15 @@
    setTimeout(() => { window.location.href = 'index.html'; }, 80);
  }
 
- function toggleMute() {
-   isMuted = !isMuted;
-   localStorage.setItem('casinoMusicMuted', isMuted ? 'true' : 'false');
+//  function toggleMute() {
+//    isMuted = !isMuted;
+//    localStorage.setItem('casinoMusicMuted', isMuted ? 'true' : 'false');
 
-   const mBtn = document.getElementById('muteBtn');
-   if (mBtn) mBtn.textContent = isMuted ? '🔇' : '🔈';
+//    const mBtn = document.getElementById('muteBtn');
+//    if (mBtn) mBtn.textContent = isMuted ? '🔇' : '🔈';
 
-   if (musicAudio) musicAudio.volume = isMuted ? 0 : 0.7;
- }
+//    if (musicAudio) musicAudio.volume = isMuted ? 0 : 0.7;
+//  }
 
  quitBtn.addEventListener('click', quitToStart);
 

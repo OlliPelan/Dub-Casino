@@ -22,7 +22,7 @@
   z-index: 1000;
 }
 
-.mute-btn {
+/* .mute-btn {
   position: fixed;
   right: 1rem;
   bottom: 1rem;
@@ -40,7 +40,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-}
+} */
 
 /* Responsiivisesti pienempi mobiilissa */
 @media (max-width: 600px) {
@@ -50,11 +50,11 @@
     left: 0.75rem;
     bottom: 1rem;
   }
-  .mute-btn {
+  /* .mute-btn {
     width: 45px;
     height: 45px;
     font-size: 1rem;
-  }
+  } */
 }
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
@@ -139,7 +139,7 @@
 </head>
 <body>
 <button class="corner-btn" onclick="parent.postMessage('closeGame', '*')">←</button>
-<button class="mute-btn" id="muteBtn" onclick="toggleMute()">🔊</button>
+<!-- <button class="mute-btn" id="muteBtn" onclick="toggleMute()">🔊</button> -->
   <div class="game-container">
     <div class="message" id="message">Place your bet and press DEAL!</div>
     <div class="cards-area">
