@@ -5,19 +5,38 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Dub Casino Lobby</title>
   <style>
-    html, body { margin: 0; padding: 0; background: #000; height: 100%; overscroll-behavior: none; touch-action: none; }
-    * { -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; }
-    #game-root { position: fixed; inset: 0; display: grid; place-items: center; background: #000; overflow: hidden; }
-    canvas { image-rendering: pixelated; image-rendering: crisp-edges; width: 100vw; height: 100vh; max-width: 100%; max-height: 100%; display: block; background: #1a0f1a; cursor: pointer; }
+    html, body {
+      margin: 0; padding: 16px; background: #121212;
+      width: 100%; height: 100vh; height: 100dvh;
+      overflow: hidden; overscroll-behavior: none; touch-action: none;
+      display: flex; justify-content: center; align-items: center;
+      box-sizing: border-box;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; }
+    .app-container {
+      position: relative;
+      width: 100%; max-width: 440px;
+      height: 100%; max-height: 920px;
+      background: #000;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+    }
+    @media (max-width: 480px) {
+      html, body { padding: 0; background: #000; }
+      .app-container { max-width: 100%; max-height: 100%; border-radius: 0; box-shadow: none; }
+    }
+    #game-root { position: absolute; inset: 0; display: grid; place-items: center; background: #000; overflow: hidden; }
+    canvas { image-rendering: pixelated; image-rendering: crisp-edges; width: 100%; height: 100%; display: block; background: #1a0f1a; cursor: pointer; }
 
-    .dialog { position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%); background: rgba(16,8,16,0.95); border: 1px solid #caa86a; color: #f1e8d0; padding: 10px 12px; width: min(80vw, 260px); border-radius: 8px; box-shadow: 0 8px 26px rgba(0,0,0,0.5); display: none; z-index: 10; pointer-events: auto; }
+    .dialog { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); background: rgba(16,8,16,0.95); border: 1px solid #caa86a; color: #f1e8d0; padding: 10px 12px; width: min(80%, 260px); border-radius: 8px; box-shadow: 0 8px 26px rgba(0,0,0,0.5); display: none; z-index: 10; pointer-events: auto; }
     .dialog h4 { margin: 0 0 6px 0; font: 700 15px/1.25 system-ui, sans-serif; color: #ffd56b; }
     .dialog p { margin: 0 0 10px 0; font: 12px/1.35 system-ui, sans-serif; opacity: 0.9; }
-    .start-overlay { padding-top: 60px; position: fixed; inset: 0; background: url('dc.png') center/cover no-repeat; display: grid; place-items: center; z-index: 9; }
+    .start-overlay { padding-top: 60px; position: absolute; inset: 0; background: url('dc.png') center/cover no-repeat; display: grid; place-items: center; z-index: 9; }
     .start-overlay button { background: #ffd56b; border: none; border-radius: 12px; padding: 16px 18px; color: #3a2b10; font: 800 16px/1 system-ui, sans-serif; cursor: pointer; }
 
     .quit-btn {
-    position: fixed;
+    position: absolute;
     left: 1rem;
     bottom: 1rem;
     padding: 0.75rem 1.25rem;
@@ -60,16 +79,19 @@
   </style>
 </head>
 <body>
-  <div id="game-root">
-    <canvas id="game" role="application" aria-label="Game lobby"></canvas>
-  </div>
+  <div class="app-container" id="appContainer">
+    <div id="game-root">
+      <canvas id="game" role="application" aria-label="Game lobby"></canvas>
+    </div>
 
-  <div id="startOverlay" class="start-overlay">
-    <button id="startBtn">Tap to Start</button>
-  </div>
+    <div id="startOverlay" class="start-overlay">
+      <button id="startBtn">Tap to Start</button>
+    </div>
 
-  <button id="quitBtn" class="quit-btn" style="display:none;">Quit</button>
+    <button id="quitBtn" class="quit-btn" style="display:none;">Quit</button>
   <!-- <button id="muteBtn" class="mute-btn" style="display:none;">🔈</button> -->
+
+  </div>
 
 <script>
 (function(){
@@ -101,10 +123,12 @@
  const canvas = document.getElementById('game');
  const ctx = canvas.getContext('2d');
 
+ const appContainer = document.getElementById('appContainer');
  function resizeCanvas() {
    const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
-   const w = Math.floor(window.innerWidth);
-   const h = Math.floor(window.innerHeight);
+   const rect = appContainer.getBoundingClientRect();
+   const w = Math.max(1, Math.floor(rect.width));
+   const h = Math.max(1, Math.floor(rect.height));
    canvas.width = w * dpr;
    canvas.height = h * dpr;
    canvas.style.width = w + 'px';
@@ -191,17 +215,17 @@
    gameOverlay = document.createElement('iframe');
    gameOverlay.id = 'gameOverlay';
    Object.assign(gameOverlay.style, {
-     position: 'fixed', top: '0', left: '0', width: '100%', height: '100%', border: '0', zIndex: 2000, background: '#000'
+     position: 'absolute', top: '0', left: '0', width: '100%', height: '100%', border: '0', zIndex: 2000, background: '#000'
    });
    gameOverlay.src = url;
    gameOverlay.setAttribute('allowfullscreen', '');
-   document.body.appendChild(gameOverlay);
+   appContainer.appendChild(gameOverlay);
    if (quitBtn) { quitBtn.textContent = 'Close'; quitBtn.dataset.overlayOpen = 'true'; quitBtn.style.display = 'block'; }
  }
  function closeGameOverlay() {
    if (!gameOverlay) return;
    try { gameOverlay.src = 'about:blank'; } catch(e){}
-   document.body.removeChild(gameOverlay);
+   if (gameOverlay.parentNode) gameOverlay.parentNode.removeChild(gameOverlay);
    gameOverlay = null;
    if (quitBtn) { quitBtn.textContent = 'Quit'; delete quitBtn.dataset.overlayOpen; }
  }

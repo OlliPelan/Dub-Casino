@@ -13,7 +13,7 @@
 
     <style>
     .corner-btn {
-  position: fixed;
+  position: absolute;
   left: 1rem;    /* etäisyys vasemmasta reunasta */
   bottom: 1rem;    /* etäisyys alareunasta */
   padding: 0.75rem 1.25rem;
@@ -62,18 +62,31 @@
   } */
 }
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    html, body { width: 100%; height: 100%; overflow: hidden; }
+    html, body { width: 100%; height: 100vh; height: 100dvh; overflow: hidden; background: #121212; }
     body {
-    font-family: 'Arial', sans-serif;
-    /* Use the uploaded image public URL so it loads reliably in the Playground */
-    background: url('https://cdn.abacus.ai/images/05fbd73e-cd87-4fb9-a3b9-e0b9ee362ddc.png') center / cover no-repeat fixed;
-    display: flex; justify-content: center; align-items: center; color: white; touch-action: manipulation;
+      font-family: 'Arial', sans-serif;
+      padding: 16px;
+      display: flex; justify-content: center; align-items: center; color: white; touch-action: manipulation;
+    }
+    .app-container {
+      position: relative;
+      width: 100%; max-width: 440px;
+      height: 100%; max-height: 920px;
+      background: #1a1a1a url('https://cdn.abacus.ai/images/05fbd73e-cd87-4fb9-a3b9-e0b9ee362ddc.png') center / cover no-repeat;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+      display: flex; flex-direction: column;
+    }
+    @media (max-width: 480px) {
+      body { padding: 0; background: #1a1a1a; }
+      .app-container { max-width: 100%; max-height: 100%; border-radius: 0; box-shadow: none; }
     }
     .game-container {
-    background: transparent; /* allow image to show through fully */
-    border-radius: 15px; padding: 15px; box-shadow: 0 0 50px rgba(0,0,0,0.25);
-    width: 100%; max-width: 600px; height: 100vh; max-height: 100vh; display: flex; flex-direction: column; overflow-y: auto;
-    margin-top: 80px;
+      background: transparent;
+      padding: 50px 15px 15px 15px;
+      width: 100%; height: 100%;
+      display: flex; flex-direction: column; overflow-y: auto;
     }
     .paytable { background: rgba(255, 215, 0, 0.08); border: 2px solid rgba(255,215,0,0.95); border-radius: 8px; padding: 8px; margin-bottom: 10px; font-size: clamp(0.65em, 2.5vw, 0.85em); }
     .paytable-row { display: flex; justify-content: space-between; padding: 3px 8px; border-bottom: 1px solid rgba(255, 215, 0, 0.2); }
@@ -109,8 +122,9 @@
     </style>
 </head>
 <body>
-<button class="corner-btn" onclick="parent.postMessage('closeGame', '*')">←</button>
-<!-- <button class="mute-btn" id="muteBtn" onclick="toggleMute()">🔊</button> -->
+<div class="app-container">
+    <button class="corner-btn" onclick="parent.postMessage('closeGame', '*')">←</button>
+    <!-- <button class="mute-btn" id="muteBtn" onclick="toggleMute()">🔊</button> -->
 
     <div class="game-container">
     <div class="paytable" id="paytable">
@@ -173,6 +187,7 @@
     <button id="dealButton">DEAL</button>
     </div>
     </div>
+</div>
 
     <script>
     // Prevent double-tap zoom hiccups
